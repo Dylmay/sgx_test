@@ -10,7 +10,7 @@
 
 
 #include <sgx_urts.h>
-#include "sample.h"
+#include "sgx_perf.h"
 
 #include "Enclave_u.h"
 
@@ -159,7 +159,7 @@ int SGX_CDECL main(int argc, char *argv[])
     (void)(argv);
 
     /* Changing dir to where the executable is.*/
-    char absolutePath [MAX_PATH];
+    char absolutePath [MAX_PATH]; // @suppress("Symbol is not resolved")
     char *ptr = NULL;
 
     ptr = realpath(dirname(argv[0]),absolutePath);

@@ -43,7 +43,7 @@ else
 	Urts_Library_Name := sgx_urts
 endif
 
-App_C_Files := $(UNTRUSTED_DIR)/sample.c
+App_C_Files := $(UNTRUSTED_DIR)/sgx_perf.c
 App_Include_Paths := -IInclude -I$(UNTRUSTED_DIR) -I$(SGX_SDK)/include
 
 App_C_Flags := $(SGX_COMMON_CFLAGS) -fPIC -Wno-attributes $(App_Include_Paths)
@@ -84,8 +84,8 @@ endif
 .PHONY: all run
 
 ifeq ($(Build_Mode), HW_RELEASE)
-all: sample
-	@echo "Build sample [$(Build_Mode)|$(SGX_ARCH)] success!"
+all: sgx_perf
+	@echo "Build sgx_perf [$(Build_Mode)|$(SGX_ARCH)] success!"
 	@echo
 	@echo "*********************************************************************************************************************************************************"
 	@echo "PLEASE NOTE: In this mode, please sign the Enclave.so first using Two Step Sign mechanism before you run the app to launch and access the enclave."
@@ -93,13 +93,13 @@ all: sample
 	@echo
 
 else
-all: sample
+all: sgx_perf
 endif
 
 run: all
 ifneq ($(Build_Mode), HW_RELEASE)
-	@$(CURDIR)/sample
-	@echo "RUN  =>  sample [$(SGX_MODE)|$(SGX_ARCH), OK]"
+	@$(CURDIR)/sgx_perf
+	@echo "RUN  =>  sgx_perf [$(SGX_MODE)|$(SGX_ARCH), OK]"
 endif
 
 ######## App Objects ########
@@ -116,7 +116,7 @@ $(UNTRUSTED_DIR)/%.o: $(UNTRUSTED_DIR)/%.c
 	@$(CXX) $(App_C_Flags) -c $< -o $@
 	@echo "CXX  <=  $<"
 
-sample: $(UNTRUSTED_DIR)/Enclave_u.o $(App_C_Objects)
+sgx_perf: $(UNTRUSTED_DIR)/Enclave_u.o $(App_C_Objects)
 	@$(CXX) $^ -o $@ $(App_Link_Flags)
 	@echo "LINK =>  $@"
 
@@ -124,4 +124,4 @@ sample: $(UNTRUSTED_DIR)/Enclave_u.o $(App_C_Objects)
 .PHONY: clean
 
 clean:
-	@rm -f sample  $(App_C_Objects) $(UNTRUSTED_DIR)/Enclave_u.* 
+	@rm -f sgx_perf  $(App_C_Objects) $(UNTRUSTED_DIR)/Enclave_u.* 
