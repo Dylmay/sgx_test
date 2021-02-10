@@ -1,5 +1,6 @@
 #include <string.h>
 #include <assert.h>
+#include <time.h>
 
 #include <unistd.h>
 #include <pwd.h>
@@ -123,6 +124,11 @@ void print_error_message(sgx_status_t ret)
         printf("Error code is 0x%X. Please refer to the \"Intel SGX SDK Developer Reference\" for more details.\n", ret);
 }
 
+double measure_ticks(clock_t start, clock_t end)
+{
+  return (double) (end - start);
+}
+
 /* Initialize the enclave:
  *   Call sgx_create_enclave to initialize an enclave instance
  */
@@ -143,14 +149,62 @@ int initialize_enclave(void)
 }
 
 /* OCall functions */
-void ocall_Enclave_sample(const char *str)
+void ocall_enclave_str(const char *str)
 {
     /* Proxy/Bridge will check the length and null-terminate 
      * the input string to prevent buffer overflow. 
      */
     printf("%s", str);
 }
+int rw_enclave_data(double *w_tick_rec, double *r_tick_rec, int count)
+{
 
+	if (initialize_enclave() < 0)
+		return -1;
+
+	for (int i = 0; i < count; i++) {
+		clock_t start, end;
+
+		start = clock();
+
+		//write random data
+		ecall_rand_write(global_eid);
+
+		w_tick_rec[i] = measure_ticks(start, end);
+
+		end = clock();
+		start = clock();
+
+		//read random data
+		int ecall_ret;
+		ecall_rand_read(global_eid, &ecall_ret);
+
+
+		end = clock();
+		r_tick_rec[i] = measure_ticks(start, end);
+	}
+
+	sgx_destroy_enclave(global_eid);
+
+	return 0;
+}
+
+int const_dest_enclave(double *tick_recordings, int count)
+{
+	for (int i = 0; i < count; i++) {
+		clock_t start = clock();
+
+		if (initialize_enclave() < 0)
+			return -1;
+
+		sgx_destroy_enclave(global_eid);
+
+		clock_t end = clock();
+		tick_recordings[i] = measure_ticks(start, end);
+	}
+
+	return 0;
+}
 
 /* Application entry */
 int SGX_CDECL main(int argc, char *argv[])
@@ -170,13 +224,13 @@ int SGX_CDECL main(int argc, char *argv[])
     /* Initialize the enclave */
     if(initialize_enclave() < 0){
 
-        return -1; 
+        return -1;
     }
- 
+
     sgx_status_t ret = SGX_ERROR_UNEXPECTED;
     int ecall_return = 0;
 
-    ret = ecall_Enclave_sample(global_eid, &ecall_return);
+    ret = ecall_enclave_print(global_eid, &ecall_return);
     if (ret != SGX_SUCCESS)
         abort();
 
@@ -187,8 +241,8 @@ int SGX_CDECL main(int argc, char *argv[])
     {
         printf("Application failed %d \n", ecall_return);
     }
-    
+
     sgx_destroy_enclave(global_eid);
-    
+
     return ecall_return;
 }

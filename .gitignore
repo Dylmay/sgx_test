@@ -13,7 +13,7 @@
 .project
 
 # application
-enclave_test
+sgx_perf
 
 # special enclave files
 Enclave_t.*

@@ -8,11 +8,13 @@ enclave {
      *  [string]: specifies 'str' is a NULL terminated buffer.
      */
     untrusted {
-        void ocall_Enclave_sample([in, string] const char *str);
+        void ocall_enclave_str([in, string] const char *str);
     };
 
 
     trusted {
-    	    public int ecall_Enclave_sample();
+		public int ecall_enclave_print();
+        public void ecall_rand_write();
+        public int ecall_rand_read();
     };
 };
