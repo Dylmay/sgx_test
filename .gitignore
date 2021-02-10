@@ -12,6 +12,13 @@
 .cproject
 .project
 
+# application
+enclave_test
+
+# special enclave files
+Enclave_t.*
+Enclave_u.*
+
 # Linker output
 *.ilk
 *.map
