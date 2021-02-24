@@ -6,7 +6,7 @@
 #include "Enclave.h"
 #include "Enclave_t.h"  /* print_string */
 
-#define DATA_SIZE 100-000
+#define DATA_SIZE 1000
 
 int ENCLAVE_DATA[DATA_SIZE];
 

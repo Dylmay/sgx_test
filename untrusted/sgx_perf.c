@@ -137,7 +137,7 @@ struct timespec timespec_diff(struct timespec start, struct timespec end)
 
 	if ((end.tv_nsec - start.tv_nsec) < 0) {
 		temp.tv_sec = end.tv_sec - start.tv_sec -1;
-		temp.tv_nsec = (end.tv_nsec - start.tv_nsec) + 1-000-000-000;
+		temp.tv_nsec = (end.tv_nsec - start.tv_nsec) + 1000000000;
 	} else {
 		temp.tv_sec = end.tv_sec - start.tv_sec;
 		temp.tv_nsec = end.tv_nsec - start.tv_nsec;
@@ -208,7 +208,7 @@ int rw_enclave_data(struct timespec *w_tick_rec, struct timespec *r_tick_rec, in
 	return sgx_destroy_enclave(global_eid);
 }
 
-int const_dest_enclave(struct timespec *tick_recordings, int count)
+int const_dest_enclave(struct timespec *recordings, int count)
 {
 	for (int i = 0; i < count; i++) {
 		struct timespec start, end;
@@ -222,7 +222,7 @@ int const_dest_enclave(struct timespec *tick_recordings, int count)
 
 		clock_gettime(CLOCK_PROCESS_CPUTIME_ID, &end);
 
-		tick_recordings[i] = timespec_diff(start, end);
+		recordings[i] = timespec_diff(start, end);
 	}
 
 	return 0;
@@ -232,10 +232,10 @@ int const_dest_enclave(struct timespec *tick_recordings, int count)
 void print_timespec_recordings(struct timespec *recordings, int length) {
 	for (int i = 0; i < length; i++)
 		printf("Recording %i, Time taken: %lus, %luus (%lu ms)\n",
-				i + 1,
+				(i + 1),
 				recordings[i].tv_sec,
-				recordings[i].tv_nsec / 1-000,
-				recordings[i].tv_nsec / 1-000-000
+				(recordings[i].tv_nsec / 1000),
+				(recordings[i].tv_nsec / 1000000)
 		);
 }
 
