@@ -277,16 +277,16 @@ int SGX_CDECL main(int argc, char *argv[])
     }
 
     //print results
-    puts("\nWrite recordings:");
+    puts("-- Write recordings --");
     print_nanosec_recordings(w_recordings, RW_COUNT);
-    puts("\nRead recordings:");
+    puts("-- Read recordings --");
     print_nanosec_recordings(r_recordings, RW_COUNT);
 
     // construct/destruct enclave test
     ecall_return = const_dest_enclave(cd_recordings, ENC_COUNT);
 
     //print results
-    puts("\n\n-- Construct/Descruct enclaves --");
+    puts("-- Construct/Destruct enclaves --");
     print_nanosec_recordings(cd_recordings, ENC_COUNT);
 
 
