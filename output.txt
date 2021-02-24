@@ -1,0 +1,37 @@
+
+Write recordings:
+Recording 1; 2298216 ns
+Recording 2; 2299506 ns
+Recording 3; 2257102 ns
+Recording 4; 2327420 ns
+Recording 5; 2391288 ns
+Recording 6; 2296318 ns
+Recording 7; 2360041 ns
+Recording 8; 2256586 ns
+Recording 9; 2374912 ns
+Recording 10; 2282191 ns
+
+Read recordings:
+Recording 1; 7226 ns
+Recording 2; 6840 ns
+Recording 3; 6827 ns
+Recording 4; 7072 ns
+Recording 5; 7632 ns
+Recording 6; 15992 ns
+Recording 7; 7237 ns
+Recording 8; 6822 ns
+Recording 9; 7418 ns
+Recording 10; 7160 ns
+
+
+-- Construct/Descruct enclaves --
+Recording 1; 32281362 ns
+Recording 2; 32263429 ns
+Recording 3; 31947481 ns
+Recording 4; 32208519 ns
+Recording 5; 32164001 ns
+Recording 6; 32158132 ns
+Recording 7; 32152250 ns
+Recording 8; 32150406 ns
+Recording 9; 32161097 ns
+Recording 10; 32155334 ns

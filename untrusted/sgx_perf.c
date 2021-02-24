@@ -239,6 +239,11 @@ void print_timespec_recordings(struct timespec *recordings, int length) {
 		);
 }
 
+void print_nanosec_recordings(struct timespec *recordings, int length) {
+	for (int i = 0; i < length; i++)
+		printf("Recording %i; %lu ns\n", i+1 , recordings[i].tv_nsec);
+}
+
 /* Application entry */
 int SGX_CDECL main(int argc, char *argv[])
 {
@@ -267,23 +272,22 @@ int SGX_CDECL main(int argc, char *argv[])
 
     //check the function was successful
     if (ecall_return != 0) {
-    	puts("Unable to read/write enclave data");
+    	printf("Error: Unable to read/write enclave data");
     	return ecall_return;
     }
 
     //print results
-    puts("-- Read/Write enclave data --");
     puts("\nWrite recordings:");
-    print_timespec_recordings(w_recordings, RW_COUNT);
+    print_nanosec_recordings(w_recordings, RW_COUNT);
     puts("\nRead recordings:");
-    print_timespec_recordings(r_recordings, RW_COUNT);
+    print_nanosec_recordings(r_recordings, RW_COUNT);
 
     // construct/destruct enclave test
     ecall_return = const_dest_enclave(cd_recordings, ENC_COUNT);
 
     //print results
     puts("\n\n-- Construct/Descruct enclaves --");
-    print_timespec_recordings(cd_recordings, ENC_COUNT);
+    print_nanosec_recordings(cd_recordings, ENC_COUNT);
 
 
     return ecall_return;
