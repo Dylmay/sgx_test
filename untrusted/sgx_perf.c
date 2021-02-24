@@ -10,7 +10,7 @@
 # define MAX_PATH FILENAME_MAX
 
 # define RW_COUNT 10
-# define ENC_COUNT 500
+# define ENC_COUNT 10
 
 #include <sgx_urts.h>
 #include "sgx_perf.h"
@@ -231,8 +231,8 @@ int const_dest_enclave(struct timespec *tick_recordings, int count)
 
 void print_timespec_recordings(struct timespec *recordings, int length) {
 	for (int i = 0; i < length; i++)
-		printf("Entry %i, Time taken: %lus, %luus (%lu ms)\n",
-				i,
+		printf("Recording %i, Time taken: %lus, %luus (%lu ms)\n",
+				i + 1,
 				recordings[i].tv_sec,
 				recordings[i].tv_nsec / 1-000,
 				recordings[i].tv_nsec / 1-000-000
@@ -260,12 +260,17 @@ int SGX_CDECL main(int argc, char *argv[])
     //run tests
     struct timespec w_recordings[RW_COUNT];
     struct timespec r_recordings[RW_COUNT];
+    struct timespec cd_recordings[ENC_COUNT];
 
     ecall_return = rw_enclave_data(w_recordings, r_recordings, RW_COUNT);
-    puts("Write recordings:");
+    puts("-- Read/Write enclave data --");
+    puts("\nWrite recordings:");
     print_timespec_recordings(w_recordings, RW_COUNT);
     puts("\nRead recordings:");
     print_timespec_recordings(r_recordings, RW_COUNT);
+    puts("\n\n-- Construct/Descruct enclaves --");
+    ecall_return = const_dest_enclave(cd_recordings, ENC_COUNT);
+    print_timespec_recordings(cd_recordings, ENC_COUNT);
 
     struct timespec enc_recordings[ENC_COUNT];
 
