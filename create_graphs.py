@@ -10,7 +10,7 @@ def to_dict(file) -> dict:
     output_dict = {}
     current_header = None
 
-    for line in output_file:
+    for line in file:
         if HEADER_INDICATOR in line:
             current_header = line.strip("- \n")
             output_dict.setdefault(current_header, [])
@@ -54,7 +54,6 @@ def create_bar_chart_enc(data):
     __finalise_chart(data)
 
 
-
 def __finalise_chart(data):
     systems = 'SGX Driver', 'SGX KVM', 'Virtualized SGX'
     index = numpy.arange(len(systems))
@@ -72,7 +71,6 @@ def bundle_data(sgx_driver, sgx_kvm, virt_sgx):
     ]
 
 
-
 if __name__ == '__main__':
     output_file = open(OUTPUT_FILENAME)
     result_dict = to_dict(output_file)
@@ -82,4 +80,6 @@ if __name__ == '__main__':
 
     data = bundle_data(average(result_dict), average(result_dict), average(result_dict))
 
-    create_bar_chart_read(data[0])
+    create_bar_chart_write(data[0])
+    create_bar_chart_read(data[1])
+    create_bar_chart_enc(data[2])
