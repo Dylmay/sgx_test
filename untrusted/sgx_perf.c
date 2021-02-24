@@ -9,6 +9,8 @@
 
 # define MAX_PATH FILENAME_MAX
 
+# define RW_COUNT 10
+# define ENC_COUNT 500
 
 #include <sgx_urts.h>
 #include "sgx_perf.h"
@@ -129,6 +131,21 @@ double measure_ticks(clock_t start, clock_t end)
   return (double) (end - start);
 }
 
+struct timespec timespec_diff(struct timespec start, struct timespec end)
+{
+	struct timespec temp;
+
+	if ((end.tv_nsec - start.tv_nsec) < 0) {
+		temp.tv_sec = -1;
+		temp.tv_nsec = 1-000-000-000;
+	}
+
+	temp.tv_sec = end.tv_sec - start.tv_sec;
+	temp.tv_nsec = end.tv_nsec - start.tv_nsec;
+
+	return temp;
+}
+
 /* Initialize the enclave:
  *   Call sgx_create_enclave to initialize an enclave instance
  */
@@ -156,54 +173,70 @@ void ocall_enclave_str(const char *str)
      */
     printf("%s", str);
 }
-int rw_enclave_data(double *w_tick_rec, double *r_tick_rec, int count)
+int rw_enclave_data(struct timespec *w_tick_rec, struct timespec *r_tick_rec, int count)
 {
 
 	if (initialize_enclave() < 0)
 		return -1;
 
 	for (int i = 0; i < count; i++) {
-		clock_t start, end;
+		struct timespec start, end;
 
-		start = clock();
+		clock_gettime(CLOCK_PROCESS_CPUTIME_ID, &start);
 
 		//write random data
 		ecall_rand_write(global_eid);
 
-		w_tick_rec[i] = measure_ticks(start, end);
+		//end time
+		clock_gettime(CLOCK_PROCESS_CPUTIME_ID, &end);
 
-		end = clock();
-		start = clock();
+		w_tick_rec[i] = timespec_diff(start, end);
+
+		//begin time
+		clock_gettime(CLOCK_PROCESS_CPUTIME_ID, &start);
 
 		//read random data
 		int ecall_ret;
 		ecall_rand_read(global_eid, &ecall_ret);
 
+		//end time
+		clock_gettime(CLOCK_PROCESS_CPUTIME_ID, &end);
 
-		end = clock();
-		r_tick_rec[i] = measure_ticks(start, end);
+		r_tick_rec[i] = timespec_diff(start, end);
 	}
 
-	sgx_destroy_enclave(global_eid);
-
-	return 0;
+	return sgx_destroy_enclave(global_eid);
 }
 
-int const_dest_enclave(double *tick_recordings, int count)
+int const_dest_enclave(struct timespec *tick_recordings, int count)
 {
 	for (int i = 0; i < count; i++) {
-		clock_t start = clock();
+		struct timespec start, end;
+
+		clock_gettime(CLOCK_PROCESS_CPUTIME_ID, &start);
 
 		if (initialize_enclave() < 0)
 			return -1;
 
 		sgx_destroy_enclave(global_eid);
 
-		clock_t end = clock();
-		tick_recordings[i] = measure_ticks(start, end);
+		clock_gettime(CLOCK_PROCESS_CPUTIME_ID, &end);
+
+		tick_recordings[i] = timespec_diff(start, end);
 	}
 
 	return 0;
+}
+
+
+void print_timespec_recordings(struct timespec *recordings, int length) {
+	for (int i = 0; i < length; i++)
+		printf("Entry %i, Time taken: %lus, %luus (%lu ms)\n",
+				i,
+				recordings[i].tv_sec,
+				recordings[i].tv_nsec / 1-000,
+				recordings[i].tv_nsec / 1-000-000
+		);
 }
 
 /* Application entry */
@@ -221,28 +254,21 @@ int SGX_CDECL main(int argc, char *argv[])
     if( chdir(absolutePath) != 0)
     		abort();
 
-    /* Initialize the enclave */
-    if(initialize_enclave() < 0){
-
-        return -1;
-    }
-
     sgx_status_t ret = SGX_ERROR_UNEXPECTED;
     int ecall_return = 0;
 
-    ret = ecall_enclave_print(global_eid, &ecall_return);
-    if (ret != SGX_SUCCESS)
-        abort();
+    //run tests
+    struct timespec w_recordings[RW_COUNT];
+    struct timespec r_recordings[RW_COUNT];
 
-    if (ecall_return == 0) {
-      printf("Application ran with success\n");
-    }
-    else
-    {
-        printf("Application failed %d \n", ecall_return);
-    }
+    ecall_return = rw_enclave_data(w_recordings, r_recordings, RW_COUNT);
+    puts("Write recordings:");
+    print_timespec_recordings(w_recordings, RW_COUNT);
+    puts("\nRead recordings:");
+    print_timespec_recordings(r_recordings, RW_COUNT);
 
-    sgx_destroy_enclave(global_eid);
+    struct timespec enc_recordings[ENC_COUNT];
+
 
     return ecall_return;
 }
