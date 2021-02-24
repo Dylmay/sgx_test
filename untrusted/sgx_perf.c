@@ -262,17 +262,28 @@ int SGX_CDECL main(int argc, char *argv[])
     struct timespec r_recordings[RW_COUNT];
     struct timespec cd_recordings[ENC_COUNT];
 
+    // read/write enclave data test
     ecall_return = rw_enclave_data(w_recordings, r_recordings, RW_COUNT);
+
+    //check the function was successful
+    if (ecall_return != 0) {
+    	puts("Unable to read/write enclave data");
+    	return ecall_return;
+    }
+
+    //print results
     puts("-- Read/Write enclave data --");
     puts("\nWrite recordings:");
     print_timespec_recordings(w_recordings, RW_COUNT);
     puts("\nRead recordings:");
     print_timespec_recordings(r_recordings, RW_COUNT);
-    puts("\n\n-- Construct/Descruct enclaves --");
-    ecall_return = const_dest_enclave(cd_recordings, ENC_COUNT);
-    print_timespec_recordings(cd_recordings, ENC_COUNT);
 
-    struct timespec enc_recordings[ENC_COUNT];
+    // construct/destruct enclave test
+    ecall_return = const_dest_enclave(cd_recordings, ENC_COUNT);
+
+    //print results
+    puts("\n\n-- Construct/Descruct enclaves --");
+    print_timespec_recordings(cd_recordings, ENC_COUNT);
 
 
     return ecall_return;
