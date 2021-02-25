@@ -11,10 +11,10 @@ set_governor() {
   echo "$1" | sudo tee /sys/devices/system/cpu/cpu${COREID}/cpufreq/scaling_governor
 }
 
-if [ $# -eq 0 ] then
-  help()
-  exit 0
-  fi
+if [ $# -eq 0 ]; then
+  help
+  exit
+fi
 
 set_governor "performance"
 echo "Running test..."
