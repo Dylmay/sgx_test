@@ -175,84 +175,81 @@ void ocall_enclave_str(const char *str)
      */
     printf("%s", str);
 }
-int rw_enclave_data(struct timespec *w_tick_rec, struct timespec *r_tick_rec, int count)
+
+int rw_enclave_data(struct timespec *w_rec, struct timespec *r_rec, size_t count)
 {
+	if (initialize_enclave() < 0) return -1;
 
-	if (initialize_enclave() < 0)
-		return -1;
-
-	for (int i = 0; i < count; i++) {
+	for (size_t i = 0; i < count; i++) {
 		struct timespec start, end;
-
-		clock_gettime(CLOCK_PROCESS_CPUTIME_ID, &start);
+		int ecall_ret;
 
 		//write random data
-		ecall_rand_write(global_eid);
-
-		//end time
-		clock_gettime(CLOCK_PROCESS_CPUTIME_ID, &end);
-
-		w_tick_rec[i] = timespec_diff(start, end);
-
-		//begin time
 		clock_gettime(CLOCK_PROCESS_CPUTIME_ID, &start);
+		ecall_rand_write(global_eid);
+		clock_gettime(CLOCK_PROCESS_CPUTIME_ID, &end);
+		w_rec[i] = timespec_diff(start, end);
 
 		//read random data
-		int ecall_ret;
+		clock_gettime(CLOCK_PROCESS_CPUTIME_ID, &start);
 		ecall_rand_read(global_eid, &ecall_ret);
-
-		//end time
 		clock_gettime(CLOCK_PROCESS_CPUTIME_ID, &end);
-
-		r_tick_rec[i] = timespec_diff(start, end);
+		r_rec[i] = timespec_diff(start, end);
 	}
 
 	return sgx_destroy_enclave(global_eid);
 }
 
-int const_dest_enclave(struct timespec *recordings, int count)
+int const_dest_enclave(struct timespec *const_rec, struct timespec *dest_rec, size_t count)
 {
-	for (int i = 0; i < count; i++) {
+	for (size_t i = 0; i < count; i++) {
 		struct timespec start, end;
 
+		//construct enclave
 		clock_gettime(CLOCK_PROCESS_CPUTIME_ID, &start);
-
-		if (initialize_enclave() < 0)
-			return -1;
-
-		sgx_destroy_enclave(global_eid);
-
+		if (initialize_enclave() < 0) return -1;
 		clock_gettime(CLOCK_PROCESS_CPUTIME_ID, &end);
+		const_rec[i] = timespec_diff(start, end);
 
-		recordings[i] = timespec_diff(start, end);
+		//destruct enclave
+		clock_gettime(CLOCK_PROCESS_CPUTIME_ID, &start);
+		if (sgx_destroy_enclave(global_eid) < 0) return -1;
+		clock_gettime(CLOCK_PROCESS_CPUTIME_ID, &end);
+		dest_rec[i] = timespec_diff(start, end);
 	}
 
 	return 0;
 }
 
-int io_enclave(struct timespec *i_record, struct timespec *o_record, size_t count, size_t data_len)
+int io_enclave(struct timespec *i_rec, struct timespec *o_rec, size_t count, size_t data_len)
 {
-	if (initialize_enclave() < 0)
-		return -1;
+	if (initialize_enclave() < 0) return -1;
 
-	char data[data_len] = {0xff};
+	//io data
+	char data[data_len] = {0x0};
 
 	for (size_t i = 0; i < count; i++) {
 		struct timespec start, end;
 
+		// record input times
 		clock_gettime(CLOCK_PROCESS_CPUTIME_ID, &start);
-
-		ecall_data_in(data, data_len);
-
+		ecall_data_in(global_eid, data, data_len);
 		clock_gettime(CLOCK_PROCESS_CPUTIME_ID, &end);
+		i_rec[i] = timespec_diff(start, end);
 
-		i_record[i] = timespec_diff(start, end);
 
+		// record output times
+		clock_gettime(CLOCK_PROCESS_CPUTIME_ID, &start);
+		ecall_data_out(global_eid, data, data_len);
+		clock_gettime(CLOCK_PROCESS_CPUTIME_ID, &end);
+		o_rec[i] = timespec_diff(start, end);
 	}
+
+	return sgx_destroy_enclave(global_eid);
 }
 
 
-void print_timespec_recordings(struct timespec *recordings, int length) {
+void print_timespec_recordings(struct timespec *recordings, size_t length) {
 	for (int i = 0; i < length; i++)
 		printf("Recording %i, Time taken: %lus, %luus (%lu ms)\n",
 				(i + 1),
@@ -262,7 +259,7 @@ void print_timespec_recordings(struct timespec *recordings, int length) {
 		);
 }
 
-void print_nanosec_recordings(struct timespec *recordings, int length) {
+void print_nanosec_recordings(struct timespec *recordings, size_t length) {
 	for (int i = 0; i < length; i++)
 		printf("Recording %i; %lu ns\n", i+1 , recordings[i].tv_nsec);
 }
@@ -288,19 +285,13 @@ int SGX_CDECL main(int argc, char *argv[])
     // run tests
     struct timespec w_recordings[RW_COUNT];
     struct timespec r_recordings[RW_COUNT];
-    struct timespec cd_recordings[ENC_COUNT];
+    struct timespec c_recordings[ENC_COUNT];
+    struct timespec d_recordings[ENC_COUNT];
     struct timespec i_recordings[IO_COUNT];
     struct timespec o_recordings[IO_COUNT];
 
     // read/write enclave data test
     ecall_return = rw_enclave_data(w_recordings, r_recordings, RW_COUNT);
-
-    // check the function was successful
-    if (ecall_return != 0) {
-    	printf("Error: Unable to read/write enclave data");
-    	return ecall_return;
-    }
-
     // print results
     puts("\n-- Write recordings --");
     print_nanosec_recordings(w_recordings, RW_COUNT);
@@ -308,20 +299,20 @@ int SGX_CDECL main(int argc, char *argv[])
     print_nanosec_recordings(r_recordings, RW_COUNT);
 
     // construct/destruct enclave test
-    ecall_return = const_dest_enclave(cd_recordings, ENC_COUNT);
-
+    ecall_return = const_dest_enclave(c_recordings, d_recordings, ENC_COUNT);
     // print results
-    puts("\n\n-- Construct/Destruct enclaves --");
-    print_nanosec_recordings(cd_recordings, ENC_COUNT);
+    puts("\n-- Construct recordings --");
+    print_nanosec_recordings(c_recordings, ENC_COUNT);
+    puts("\n-- Destruct recordings --");
+    print_nanosec_recordings(d_recordings, ENC_COUNT);
 
 
     // input/output enclave test
     ecall_return = io_enclave(i_recordings, o_recordings, IO_COUNT, DATA_LEN);
-
     // print results
-    puts("\n\n-- Input recordings --");
+    puts("\n-- Input recordings --");
     print_nanosec_recordings(i_recordings, IO_COUNT);
-    puts("\n\n-- Output recordings --");
+    puts("\n-- Output recordings --");
     print_nanosec_recordings(o_recordings, IO_COUNT);
 
     return ecall_return;

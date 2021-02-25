@@ -7,6 +7,9 @@
 *.obj
 *.elf
 
+#intellij idea
+.idea/
+
 # eclipse settings
 .settings/
 .cproject
