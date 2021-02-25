@@ -48,55 +48,55 @@ def average_results(dct: dict):
     return averages
 
 
-def draw_bar_chart_read(result_set):
+def draw_bar_chart_read(result_set, colour='g'):
     """ Creates a bar chart displaying read measurements """
     pyplot.title("Read performance")
     pyplot.ylabel("time taken (ns)")
 
-    __finalise_chart(fetch_test_results(result_set, Test.READ))
+    __finalise_chart(fetch_test_results(result_set, Test.READ), colour)
 
 
-def draw_bar_chart_write(result_set):
+def draw_bar_chart_write(result_set, colour='g'):
     """ Creates a bar chart displaying write measurements """
     pyplot.title("write performance")
     pyplot.ylabel("time taken (ns)")
 
-    __finalise_chart(fetch_test_results(result_set, Test.WRITE))
+    __finalise_chart(fetch_test_results(result_set, Test.WRITE), colour)
 
 
-def draw_bar_chart_const(result_set):
+def draw_bar_chart_const(result_set, colour='g'):
     """ Creates a bar chart displaying construct measurements """
     pyplot.title("Construct performance")
     pyplot.ylabel("time taken (ns)")
 
-    __finalise_chart(fetch_test_results(result_set, Test.CONST))
+    __finalise_chart(fetch_test_results(result_set, Test.CONST), colour)
 
 
-def draw_bar_chart_dest(result_set):
+def draw_bar_chart_dest(result_set, colour='g'):
     """ Creates a bar chart displaying destruct measurements """
     pyplot.title("Destruct performance")
     pyplot.ylabel("time taken (ns)")
 
-    __finalise_chart(fetch_test_results(result_set, Test.DEST))
+    __finalise_chart(fetch_test_results(result_set, Test.DEST), colour)
 
 
-def draw_bar_chart_input(result_set):
+def draw_bar_chart_input(result_set, colour='g'):
     """ Creates a bar chart displaying input measurements """
     pyplot.title("Input performance")
     pyplot.ylabel("time taken (ns)")
 
-    __finalise_chart(fetch_test_results(result_set, Test.IN))
+    __finalise_chart(fetch_test_results(result_set, Test.IN), colour)
 
 
-def draw_bar_chart_output(result_set):
+def draw_bar_chart_output(result_set, colour='g'):
     """ Creates a bar chart displaying output measurements """
     pyplot.title("Output performance")
     pyplot.ylabel("time taken (ns)")
 
-    __finalise_chart(fetch_test_results(result_set, Test.OUT))
+    __finalise_chart(fetch_test_results(result_set, Test.OUT), colour)
 
 
-def __finalise_chart(data, colour='g'):
+def __finalise_chart(data, colour):
     """ Helper function used to finish off the created bar charts """
     systems = tuple(data.keys())
     index = numpy.arange(len(systems))
