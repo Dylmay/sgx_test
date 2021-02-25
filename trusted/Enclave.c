@@ -1,5 +1,6 @@
 #include <stdarg.h>
 #include <stdio.h>      /* vsnprintf */
+#include <string.h>
 
 #include <sgx_trts.h>
 
@@ -8,7 +9,7 @@
 
 #define DATA_SIZE 1000
 
-int ENCLAVE_DATA[DATA_SIZE];
+char ENCLAVE_DATA[DATA_SIZE];
 
 /* 
  * printf: 
@@ -50,4 +51,16 @@ void ecall_rand_write()
 		int rn = rand() % DATA_SIZE;
 		ENCLAVE_DATA[rn] = rn;
 	}
+}
+
+void ecall_data_in(char* data, size_t len)
+{
+	if (len < DATA_SIZE)
+		memcpy(ENCLAVE_DATA, data, len);
+}
+
+void ecall_data_out(char *data, size_t len)
+{
+	if (len < DATA_SIZE)
+		memcpy(data, ENCLAVE_DATA, len);
 }

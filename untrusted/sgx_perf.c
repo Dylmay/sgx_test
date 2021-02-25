@@ -11,6 +11,8 @@
 
 # define RW_COUNT 10
 # define ENC_COUNT 10
+# define IO_COUNT 10
+# define DATA_LEN 100
 
 #include <sgx_urts.h>
 #include "sgx_perf.h"
@@ -228,6 +230,27 @@ int const_dest_enclave(struct timespec *recordings, int count)
 	return 0;
 }
 
+int io_enclave(struct timespec *i_record, struct timespec *o_record, size_t count, size_t data_len)
+{
+	if (initialize_enclave() < 0)
+		return -1;
+
+	char data[data_len] = {0xff};
+
+	for (size_t i = 0; i < count; i++) {
+		struct timespec start, end;
+
+		clock_gettime(CLOCK_PROCESS_CPUTIME_ID, &start);
+
+		ecall_data_in(data, data_len);
+
+		clock_gettime(CLOCK_PROCESS_CPUTIME_ID, &end);
+
+		i_record[i] = timespec_diff(start, end);
+
+	}
+}
+
 
 void print_timespec_recordings(struct timespec *recordings, int length) {
 	for (int i = 0; i < length; i++)
@@ -262,33 +285,44 @@ int SGX_CDECL main(int argc, char *argv[])
     sgx_status_t ret = SGX_ERROR_UNEXPECTED;
     int ecall_return = 0;
 
-    //run tests
+    // run tests
     struct timespec w_recordings[RW_COUNT];
     struct timespec r_recordings[RW_COUNT];
     struct timespec cd_recordings[ENC_COUNT];
+    struct timespec i_recordings[IO_COUNT];
+    struct timespec o_recordings[IO_COUNT];
 
     // read/write enclave data test
     ecall_return = rw_enclave_data(w_recordings, r_recordings, RW_COUNT);
 
-    //check the function was successful
+    // check the function was successful
     if (ecall_return != 0) {
     	printf("Error: Unable to read/write enclave data");
     	return ecall_return;
     }
 
-    //print results
-    puts("\nWrite recordings:");
+    // print results
+    puts("\n-- Write recordings --");
     print_nanosec_recordings(w_recordings, RW_COUNT);
-    puts("\nRead recordings:");
+    puts("\n-- Read recordings --");
     print_nanosec_recordings(r_recordings, RW_COUNT);
 
     // construct/destruct enclave test
     ecall_return = const_dest_enclave(cd_recordings, ENC_COUNT);
 
-    //print results
-    puts("\n\n-- Construct/Descruct enclaves --");
+    // print results
+    puts("\n\n-- Construct/Destruct enclaves --");
     print_nanosec_recordings(cd_recordings, ENC_COUNT);
 
+
+    // input/output enclave test
+    ecall_return = io_enclave(i_recordings, o_recordings, IO_COUNT, DATA_LEN);
+
+    // print results
+    puts("\n\n-- Input recordings --");
+    print_nanosec_recordings(i_recordings, IO_COUNT);
+    puts("\n\n-- Output recordings --");
+    print_nanosec_recordings(o_recordings, IO_COUNT);
 
     return ecall_return;
 }
