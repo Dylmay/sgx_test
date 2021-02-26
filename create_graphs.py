@@ -32,10 +32,21 @@ def to_dict(file) -> dict:
 
         if current_header:
             if line.strip() != "":
-                recording_result = line.split(";")[1].strip("\n ns")
-                output_dict[current_header].append(int(recording_result))
+                recording_result = line.split(";")
+                output_dict[current_header].append(sec_to_nsec(int(recording_result[1].strip("\n (ns)")))
+                                                   + int(recording_result[2].strip("\n (ns)")))
 
     return output_dict
+
+
+def sec_to_nsec(sec):
+    """ Converts seconds to nanoseconds """
+    return sec * 1_000_000_000
+
+
+def nsec_to_msec(nsec):
+    """ Converts nanoseconds to milliseconds """
+    return nsec / 1_000_000
 
 
 def average_results(dct: dict):
@@ -125,6 +136,8 @@ if __name__ == '__main__':
     results.setdefault("SGX Driver", average_results(sgx_driver_results))
     results.setdefault("SGX KVM", average_results(sgx_driver_results))
     results.setdefault("Virt SGX", average_results(sgx_driver_results))
+
+    print(json.dumps(results, indent=2))
 
     draw_bar_chart_const(results)
     draw_bar_chart_dest(results)
