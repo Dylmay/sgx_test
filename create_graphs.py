@@ -9,6 +9,7 @@ OUTPUT_FILENAME = "output.txt"
 HEADER_INDICATOR = "--"
 
 
+
 class Test:
     """ Testing types """
     READ  = "Read"
@@ -17,6 +18,14 @@ class Test:
     DEST  = "Destruct"
     IN    = "Input"
     OUT   = "Output"
+
+
+class Stat:
+    MEAN = "mean"
+    UPPER = "upper"
+    LOWER = "lower"
+    STD_DEV = "std dev"
+    VAR = "variance"
 
 
 def to_dict(file) -> dict:
@@ -54,9 +63,19 @@ def average_results(dct: dict):
     averages = {}
 
     for key, value in dct.items():
-        averages.setdefault(key, sum(value) / len(value))
+        averages.setdefault(key, get_stats(value))
 
     return averages
+
+
+def get_stats(lst):
+    return {
+        Stat.MEAN: numpy.nanmean(lst),
+        Stat.UPPER: max(lst),
+        Stat.LOWER: min(lst),
+        Stat.STD_DEV: numpy.nanstd(lst),
+        Stat.VAR: numpy.nanvar(lst)
+    }
 
 
 def draw_bar_chart_read(result_set, colour='g'):
@@ -113,7 +132,8 @@ def __finalise_chart(data, colour):
     index = numpy.arange(len(systems))
     bar_width = 0.4
 
-    pyplot.bar(index, data.values(), color=colour, width=bar_width)
+    pyplot.errorbar(index, fetch_stat(data, Stat.MEAN), yerr=fetch_stat(data, Stat.STD_DEV), fmt='.', capsize=4)
+    pyplot.bar(index, fetch_stat(data, Stat.MEAN), color=colour, width=bar_width)
     pyplot.xticks(index, systems)
     pyplot.show()
 
@@ -128,6 +148,15 @@ def fetch_test_results(result_set: dict, test_type):
     return data_bundle
 
 
+def fetch_stat(result: dict, value_type):
+    values = []
+
+    for system in result.values():
+        values.append(system[value_type])
+
+    return values
+
+
 if __name__ == '__main__':
     output_file = open(OUTPUT_FILENAME)
     sgx_driver_results = to_dict(output_file)
@@ -137,7 +166,4 @@ if __name__ == '__main__':
     results.setdefault("SGX KVM", average_results(sgx_driver_results))
     results.setdefault("Virt SGX", average_results(sgx_driver_results))
 
-    print(json.dumps(results, indent=2))
-
-    draw_bar_chart_const(results)
-    draw_bar_chart_dest(results)
+    draw_bar_chart_input(results, 'b')
