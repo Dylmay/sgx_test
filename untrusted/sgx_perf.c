@@ -261,7 +261,7 @@ void print_timespec_recordings(struct timespec *recordings, size_t length) {
 
 void print_nanosec_recordings(struct timespec *recordings, size_t length) {
 	for (int i = 0; i < length; i++)
-		printf("Recording %i; %lu ns\n", i+1 , recordings[i].tv_nsec);
+		printf("Recording %i; %lu (s); %lu (ns)\n", i+1 , recordings[i].tv_sec, recordings[i].tv_nsec);
 }
 
 /* Application entry */

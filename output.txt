@@ -1,72 +1,72 @@
 
 -- Write recordings --
-Recording 1; 2509290 ns
-Recording 2; 2247413 ns
-Recording 3; 2291983 ns
-Recording 4; 2285037 ns
-Recording 5; 2359881 ns
-Recording 6; 2310634 ns
-Recording 7; 2238713 ns
-Recording 8; 2326869 ns
-Recording 9; 2239697 ns
-Recording 10; 2295782 ns
+Recording 1; 0 (s); 2333613 (ns)
+Recording 2; 0 (s); 2331969 (ns)
+Recording 3; 0 (s); 2240029 (ns)
+Recording 4; 0 (s); 2301628 (ns)
+Recording 5; 0 (s); 2263383 (ns)
+Recording 6; 0 (s); 2361039 (ns)
+Recording 7; 0 (s); 2296329 (ns)
+Recording 8; 0 (s); 2283899 (ns)
+Recording 9; 0 (s); 2254543 (ns)
+Recording 10; 0 (s); 2354489 (ns)
 
 -- Read recordings --
-Recording 1; 7765 ns
-Recording 2; 6768 ns
-Recording 3; 7363 ns
-Recording 4; 7600 ns
-Recording 5; 7747 ns
-Recording 6; 7095 ns
-Recording 7; 6692 ns
-Recording 8; 7319 ns
-Recording 9; 6721 ns
-Recording 10; 6817 ns
+Recording 1; 0 (s); 7169 (ns)
+Recording 2; 0 (s); 7404 (ns)
+Recording 3; 0 (s); 6836 (ns)
+Recording 4; 0 (s); 7204 (ns)
+Recording 5; 0 (s); 6878 (ns)
+Recording 6; 0 (s); 7258 (ns)
+Recording 7; 0 (s); 7144 (ns)
+Recording 8; 0 (s); 6927 (ns)
+Recording 9; 0 (s); 6836 (ns)
+Recording 10; 0 (s); 10106 (ns)
 
 -- Construct recordings --
-Recording 1; 31423260 ns
-Recording 2; 31404178 ns
-Recording 3; 31383480 ns
-Recording 4; 31365829 ns
-Recording 5; 31380659 ns
-Recording 6; 31401362 ns
-Recording 7; 31378945 ns
-Recording 8; 31400784 ns
-Recording 9; 31396802 ns
-Recording 10; 31390583 ns
+Recording 1; 0 (s); 31461088 (ns)
+Recording 2; 0 (s); 31434677 (ns)
+Recording 3; 0 (s); 31469507 (ns)
+Recording 4; 0 (s); 31432923 (ns)
+Recording 5; 0 (s); 31432370 (ns)
+Recording 6; 0 (s); 31454319 (ns)
+Recording 7; 0 (s); 31458417 (ns)
+Recording 8; 0 (s); 31450036 (ns)
+Recording 9; 0 (s); 31438880 (ns)
+Recording 10; 0 (s); 31447231 (ns)
 
 -- Destruct recordings --
-Recording 1; 499574 ns
-Recording 2; 502478 ns
-Recording 3; 498735 ns
-Recording 4; 497330 ns
-Recording 5; 498130 ns
-Recording 6; 497891 ns
-Recording 7; 499071 ns
-Recording 8; 495911 ns
-Recording 9; 499510 ns
-Recording 10; 501310 ns
+Recording 1; 0 (s); 435523 (ns)
+Recording 2; 0 (s); 433653 (ns)
+Recording 3; 0 (s); 434808 (ns)
+Recording 4; 0 (s); 427274 (ns)
+Recording 5; 0 (s); 427770 (ns)
+Recording 6; 0 (s); 427161 (ns)
+Recording 7; 0 (s); 426764 (ns)
+Recording 8; 0 (s); 427091 (ns)
+Recording 9; 0 (s); 427057 (ns)
+Recording 10; 0 (s); 427662 (ns)
 
 -- Input recordings --
-Recording 1; 8130 ns
-Recording 2; 4822 ns
-Recording 3; 4528 ns
-Recording 4; 4528 ns
-Recording 5; 4530 ns
-Recording 6; 4512 ns
-Recording 7; 4533 ns
-Recording 8; 4510 ns
-Recording 9; 4508 ns
-Recording 10; 4498 ns
+Recording 1; 0 (s); 9723 (ns)
+Recording 2; 0 (s); 4574 (ns)
+Recording 3; 0 (s); 4534 (ns)
+Recording 4; 0 (s); 4530 (ns)
+Recording 5; 0 (s); 4525 (ns)
+Recording 6; 0 (s); 4528 (ns)
+Recording 7; 0 (s); 4519 (ns)
+Recording 8; 0 (s); 4533 (ns)
+Recording 9; 0 (s); 4515 (ns)
+Recording 10; 0 (s); 4519 (ns)
 
 -- Output recordings --
-Recording 1; 4840 ns
-Recording 2; 4528 ns
-Recording 3; 4536 ns
-Recording 4; 4523 ns
-Recording 5; 4528 ns
-Recording 6; 4528 ns
-Recording 7; 4521 ns
-Recording 8; 4516 ns
-Recording 9; 4526 ns
-Recording 10; 4524 ns
+Recording 1; 0 (s); 4800 (ns)
+Recording 2; 0 (s); 4550 (ns)
+Recording 3; 0 (s); 4545 (ns)
+Recording 4; 0 (s); 4546 (ns)
+Recording 5; 0 (s); 4525 (ns)
+Recording 6; 0 (s); 4520 (ns)
+Recording 7; 0 (s); 4512 (ns)
+Recording 8; 0 (s); 4523 (ns)
+Recording 9; 0 (s); 4522 (ns)
+Recording 10; 0 (s); 4516 (ns)
