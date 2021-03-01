@@ -15,6 +15,8 @@ class Test:
     DEST = "Destruct"
     IN = "Input"
     OUT = "Output"
+    ENC = "Encryption"
+    DEC = "Decryption"
 
 
 class Stat:
@@ -105,68 +107,48 @@ class SystemSet(dict):
         return stat_bundle
 
 
-class Chart:
-    """ Class used to draw data charts """
-    @staticmethod
-    def draw_bar_chart_read(result_set, colour='g'):
-        """ Creates a bar chart displaying read measurements """
-        pyplot.title("Read performance")
-        pyplot.ylabel("time taken (ns)")
+def draw_bar_chart(test_type, data: SystemSet, colour='g'):
+    """ Creates a bar chart displaying a certain test measurement """
+    title = test_type + " performance"
+    label = "Unknown measurement"
 
-        Chart.__finalise_chart(result_set, Test.READ, colour)
+    if test_type == Test.READ:
+        label = "time taken (ns)"
 
-    @staticmethod
-    def draw_bar_chart_write(result_set, colour='g'):
-        """ Creates a bar chart displaying write measurements """
-        pyplot.title("write performance")
-        pyplot.ylabel("time taken (ns)")
+    elif test_type == Test.WRITE:
+        label = "time taken (ns)"
 
-        Chart.__finalise_chart(result_set, Test.WRITE, colour)
+    elif test_type == Test.CONST:
+        label = "time taken (ns)"
 
-    @staticmethod
-    def draw_bar_chart_const(result_set, colour='g'):
-        """ Creates a bar chart displaying construct measurements """
-        pyplot.title("Construct performance")
-        pyplot.ylabel("time taken (ns)")
+    elif test_type == Test.DEST:
+        label = "time taken (ns)"
 
-        Chart.__finalise_chart(result_set, Test.CONST, colour)
+    elif test_type == Test.IN:
+        label = "time taken (ns)"
 
-    @staticmethod
-    def draw_bar_chart_dest(result_set, colour='g'):
-        """ Creates a bar chart displaying destruct measurements """
-        pyplot.title("Destruct performance")
-        pyplot.ylabel("time taken (ns)")
+    elif test_type == Test.OUT:
+        label = "time taken (ns)"
 
-        Chart.__finalise_chart(result_set, Test.DEST, colour)
+    elif test_type == Test.ENC:
+        label = "time taken (ns)"
 
-    @staticmethod
-    def draw_bar_chart_input(result_set, colour='g'):
-        """ Creates a bar chart displaying input measurements """
-        pyplot.title("Input performance")
-        pyplot.ylabel("time taken (ns)")
+    elif test_type == Test.DEC:
+        label = "time taken (ns)"
 
-        Chart.__finalise_chart(result_set, Test.IN, colour)
 
-    @staticmethod
-    def draw_bar_chart_output(result_set: SystemSet, colour='g'):
-        """ Creates a bar chart displaying output measurements """
-        pyplot.title("Output performance")
-        pyplot.ylabel("time taken (ns)")
+    pyplot.title(title)
+    pyplot.ylabel(label)
 
-        Chart.__finalise_chart(result_set, Test.OUT, colour)
+    systems = tuple(data.keys())
+    index = numpy.arange(len(systems))
+    bar_width = 0.4
 
-    @staticmethod
-    def __finalise_chart(data: SystemSet, test_type: str, colour):
-        """ Helper function used to finish off the created bar charts """
-        systems = tuple(data.keys())
-        index = numpy.arange(len(systems))
-        bar_width = 0.4
-
-        pyplot.errorbar(index, data.get_test_stats(test_type, Stat.MEAN),
-                        yerr=data.get_test_stats(test_type, Stat.STD_DEV), fmt='.', capsize=4)
-        pyplot.bar(index, data.get_test_stats(test_type, Stat.MEAN), color=colour, width=bar_width)
-        pyplot.xticks(index, systems)
-        pyplot.show()
+    pyplot.errorbar(index, data.get_test_stats(test_type, Stat.MEAN),
+                    yerr=data.get_test_stats(test_type, Stat.STD_DEV), fmt='.', capsize=4)
+    pyplot.bar(index, data.get_test_stats(test_type, Stat.MEAN), color=colour, width=bar_width)
+    pyplot.xticks(index, systems)
+    pyplot.show()
 
 
 def sec_to_nsec(sec):
@@ -185,5 +167,5 @@ if __name__ == '__main__':
     system_set.add_system("SGX KVM", ResultSet(OUTPUT_FILENAME))
     system_set.add_system("Virt SGX", ResultSet(OUTPUT_FILENAME))
 
-    Chart.draw_bar_chart_input(system_set, 'b')
-    Chart.draw_bar_chart_output(system_set, 'y')
+    draw_bar_chart(Test.ENC, system_set, 'b')
+    draw_bar_chart(Test.OUT, system_set, 'y')
