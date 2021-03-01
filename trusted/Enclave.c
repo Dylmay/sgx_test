@@ -3,13 +3,24 @@
 #include <string.h>
 
 #include <sgx_trts.h>
+#include <sgx_tcrypto.h>
 
 #include "Enclave.h"
 #include "Enclave_t.h"  /* print_string */
 
 #define DATA_SIZE 1000
+#define MAX_DATA_MALLOC 1000
+#define BUFFER_LEN 2048
+
+#define IV_PTR(buffer) (buffer + SGX_AESGCM_MAC_SIZE)
+#define MSG_PTR(buffer) (buffer + SGX_AESGCM_MAC_SIZE + SGX_AESGCM_IV_SIZE)
+#define MAC_PTR(buffer) ((sgx_aes_gcm_128bit_tag_t *) (buffer))
 
 char ENCLAVE_DATA[DATA_SIZE];
+
+void *DATA_PTR = 0x0;
+
+sgx_aes_gcm_128bit_key_t AES_KEY;
 
 /* 
  * printf: 
@@ -25,7 +36,7 @@ void printf(const char *fmt, ...)
     ocall_enclave_str(buf);
 }
 
-int rand()
+static inline int rand()
 {
 	int val = -1;
 
@@ -64,3 +75,70 @@ void ecall_data_out(char *data, size_t len)
 	if (len < DATA_SIZE)
 		memcpy(data, ENCLAVE_DATA, len);
 }
+
+
+void ecall_data_in_malloc(char *data, size_t len)
+{
+	if (len < MAX_DATA_MALLOC) {
+		if (&DATA_PTR != 0x0)
+			free(DATA_PTR);
+
+		DATA_PTR = calloc(len, sizeof(char));
+		memcpy(DATA_PTR, data, len);
+	}
+}
+
+void ecall_data_out_malloc(char *data, size_t len)
+{
+	if (len < MAX_DATA_MALLOC)
+		memcpy(data, DATA_PTR, len);
+}
+
+
+void ecall_aesgcm_init()
+{
+	sgx_read_rand(AES_KEY, SGX_AESGCM_KEY_SIZE);
+}
+
+void print_hex(char *data, size_t data_len)
+{
+	for (size_t i = 0; i < data_len; i++)
+		printf("0x%x ", data[i]);
+}
+
+void ecall_aesgcm_enc(char *text_in, size_t len_in, char *enc_out, size_t len_out)
+{
+	uint8_t *buffer = calloc(BUFFER_LEN, sizeof(uint8_t));
+	//sets iv
+	sgx_read_rand(IV_PTR(buffer), SGX_AESGCM_IV_SIZE);
+
+	sgx_status_t res;
+	res = sgx_rijndael128GCM_encrypt(&AES_KEY,
+			text_in, len_in, //data
+			MSG_PTR(buffer), //message
+			IV_PTR(buffer), SGX_AESGCM_IV_SIZE, //iv
+			NULL, 0, //aad
+			MAC_PTR(buffer) //MAC
+	);
+
+	memcpy(enc_out, buffer, len_out);
+	free(buffer);
+}
+
+void ecall_aesgcm_dec(char *enc_in, size_t len_in, char *text_out, size_t len_out)
+{
+	uint8_t *buffer = calloc(BUFFER_LEN, sizeof(uint8_t));
+
+	sgx_status_t res;
+	res = sgx_rijndael128GCM_decrypt(&AES_KEY, //key
+			MSG_PTR(enc_in), len_out, //data
+			buffer, //decrypted message
+			IV_PTR(enc_in), SGX_AESGCM_IV_SIZE, //iv
+			NULL, 0, //aad
+			MAC_PTR(enc_in) //MAC
+	);
+
+	memcpy(text_out, buffer, len_out);
+	free(buffer);
+}
+

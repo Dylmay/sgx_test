@@ -9,10 +9,16 @@
 
 # define MAX_PATH FILENAME_MAX
 
+# define SGX_AESGCM_MAC_SIZE 16
+# define SGX_AESGCM_IV_SIZE 12
+
 # define RW_COUNT 10
 # define ENC_COUNT 10
 # define IO_COUNT 10
+# define AES_COUNT 10
 # define DATA_LEN 100
+# define ARR_SIZE(arr) (sizeof(arr) / sizeof((arr)[0]))
+# define ENC_MSG_SIZE(data) (ARR_SIZE(data) + SGX_AESGCM_MAC_SIZE + SGX_AESGCM_IV_SIZE)
 
 #include <sgx_urts.h>
 #include "sgx_perf.h"
@@ -108,6 +114,13 @@ static sgx_errlist_t sgx_errlist[] = {
         NULL
     },
 };
+
+void rand_arr(char* arr, size_t len)
+{
+	srand(time(NULL));
+	for (size_t i = 0; i < len; i++)
+		arr[i] = rand() % sizeof(char);
+}
 
 /* Check error conditions for loading enclave */
 void print_error_message(sgx_status_t ret)
@@ -226,7 +239,8 @@ int io_enclave(struct timespec *i_rec, struct timespec *o_rec, size_t count, siz
 	if (initialize_enclave() < 0) return -1;
 
 	//io data
-	char data[data_len] = {0x0};
+	char data[data_len];
+	rand_arr(data, data_len);
 
 	for (size_t i = 0; i < count; i++) {
 		struct timespec start, end;
@@ -248,8 +262,47 @@ int io_enclave(struct timespec *i_rec, struct timespec *o_rec, size_t count, siz
 	return sgx_destroy_enclave(global_eid);
 }
 
+void print_hex(char *data, size_t data_len)
+{
+	for (size_t i = 0; i < data_len; i++)
+		printf("0x%x ", data[i]);
+}
 
-void print_timespec_recordings(struct timespec *recordings, size_t length) {
+int enc_dec_data(struct timespec *e_rec, struct  timespec *d_rec, size_t count, size_t data_len)
+{
+	if (initialize_enclave() < 0) return -1;
+
+	char data[data_len];
+	char *enc_buffer = (char*) calloc(ENC_MSG_SIZE(data), sizeof(char));
+	char *dec_buffer = (char*) calloc(data_len, sizeof(char));
+
+	rand_arr(data, data_len);
+	ecall_aesgcm_init(global_eid);
+
+	for (size_t i = 0; i < count; i++) {
+		struct timespec start, end;
+
+		//record encryption times
+		clock_gettime(CLOCK_PROCESS_CPUTIME_ID, &start);
+		ecall_aesgcm_enc(global_eid, data, data_len, enc_buffer, ENC_MSG_SIZE(data));
+		clock_gettime(CLOCK_PROCESS_CPUTIME_ID, &end);
+		e_rec[i] = timespec_diff(start, end);
+
+		//record decryption times
+		clock_gettime(CLOCK_PROCESS_CPUTIME_ID, &start);
+		ecall_aesgcm_dec(global_eid, enc_buffer, ENC_MSG_SIZE(data), dec_buffer, data_len);
+		clock_gettime(CLOCK_PROCESS_CPUTIME_ID, &end);
+		d_rec[i] = timespec_diff(start, end);
+	}
+
+	free(enc_buffer);
+	free(dec_buffer);
+	return sgx_destroy_enclave(global_eid);
+}
+
+
+void print_timespec_recordings(struct timespec *recordings, size_t length)
+{
 	for (int i = 0; i < length; i++)
 		printf("Recording %i, Time taken: %lus, %luus (%lu ms)\n",
 				(i + 1),
@@ -259,9 +312,18 @@ void print_timespec_recordings(struct timespec *recordings, size_t length) {
 		);
 }
 
-void print_nanosec_recordings(struct timespec *recordings, size_t length) {
+void print_nanosec_recordings(struct timespec *recordings, size_t length)
+{
 	for (int i = 0; i < length; i++)
 		printf("Recording %i; %lu (s); %lu (ns)\n", i+1 , recordings[i].tv_sec, recordings[i].tv_nsec);
+}
+
+void print_test_counts()
+{
+	printf("RW Count: %d repeats\n", RW_COUNT);
+	printf("CD Count: %d repeats\n", ENC_COUNT);
+	printf("IO Count: %d repeats\n", IO_COUNT);
+	printf("IO data length: %d bytes", DATA_LEN);
 }
 
 /* Application entry */
@@ -289,6 +351,8 @@ int SGX_CDECL main(int argc, char *argv[])
     struct timespec d_recordings[ENC_COUNT];
     struct timespec i_recordings[IO_COUNT];
     struct timespec o_recordings[IO_COUNT];
+    struct timespec enc_recordings[AES_COUNT];
+    struct timespec dec_recordings[AES_COUNT];
 
     // read/write enclave data test
     ecall_return = rw_enclave_data(w_recordings, r_recordings, RW_COUNT);
@@ -314,6 +378,13 @@ int SGX_CDECL main(int argc, char *argv[])
     print_nanosec_recordings(i_recordings, IO_COUNT);
     puts("\n-- Output recordings --");
     print_nanosec_recordings(o_recordings, IO_COUNT);
+
+    // encryption/decryption enclave test
+    ecall_return = enc_dec_data(enc_recordings, dec_recordings, AES_COUNT, DATA_LEN);
+    puts("\n-- Encryption recordings --");
+    print_nanosec_recordings(enc_recordings, AES_COUNT);
+    puts("\n-- Decryption recordings --");
+    print_nanosec_recordings(dec_recordings, AES_COUNT);
 
     return ecall_return;
 }
