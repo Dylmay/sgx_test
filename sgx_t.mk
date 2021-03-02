@@ -1,8 +1,9 @@
 ######## Intel(R) SGX SDK Settings ########
 SGX_SDK ?= /opt/intel/sgxsdk
-SGX_MODE ?= SIM
 SGX_ARCH ?= x64
 TRUSTED_DIR=trusted
+SGX_MODE ?= HW
+SGX_DEBUG ?= 1
 
 ifeq ($(shell getconf LONG_BIT), 32)
 	SGX_ARCH := x86

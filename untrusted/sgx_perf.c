@@ -22,8 +22,6 @@
 
 #include "Enclave_u.h"
 
-
-
 /* Global EID shared by multiple threads */
 sgx_enclave_id_t global_eid = 0;
 
@@ -112,6 +110,12 @@ static sgx_errlist_t sgx_errlist[] = {
     },
 };
 
+static inline void trace_hello()
+{
+	puts("Trace: hello");
+	exit(0);
+}
+
 void rand_arr(char* arr, size_t len)
 {
 	srand(time(NULL));
@@ -189,6 +193,7 @@ void ocall_enclave_str(const char *str)
 int rw_enclave_data(struct timespec *w_rec, struct timespec *r_rec, size_t count)
 {
 	if (initialize_enclave() < 0) return -1;
+
 
 	for (size_t i = 0; i < count; i++) {
 		struct timespec start, end;
@@ -315,7 +320,8 @@ void print_nanosec_recordings(struct timespec *recordings, size_t length)
 		printf("Recording %i; %lu (s); %lu (ns)\n", i+1 , recordings[i].tv_sec, recordings[i].tv_nsec);
 }
 
-static inline void assert_exit(int retval) {
+static inline void assert_exit(int retval)
+{
 	if (retval != 0) {
 		printf("Error: bad enclave return value 0x%x\n", retval);
 		exit(-1);
@@ -368,12 +374,12 @@ int SGX_CDECL main(int argc, char *argv[])
     }
 
     // read/write enclave data test
-    assert_exit(rw_enclave_data(rec_one, rec_two, rec_count));
+    //assert_exit(rw_enclave_data(rec_one, rec_two, rec_count));
     // print results
-    puts("\n-- Write recordings --");
-    print_nanosec_recordings(rec_one, rec_count);
-    puts("\n-- Read recordings --");
-    print_nanosec_recordings(rec_two, rec_count);
+    //puts("\n-- Write recordings --");
+    //print_nanosec_recordings(rec_one, rec_count);
+    //puts("\n-- Read recordings --");
+    //print_nanosec_recordings(rec_two, rec_count);
 
     // construct/destruct enclave test
     assert_exit(const_dest_enclave(rec_one, rec_two, rec_count));
