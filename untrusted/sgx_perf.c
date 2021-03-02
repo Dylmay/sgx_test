@@ -12,11 +12,8 @@
 # define SGX_AESGCM_MAC_SIZE 16
 # define SGX_AESGCM_IV_SIZE 12
 
-# define RW_COUNT 10
-# define ENC_COUNT 10
-# define IO_COUNT 10
-# define AES_COUNT 10
-# define DATA_LEN 100
+# define DEF_COUNT 10000
+# define DATA_LEN 10000
 # define ARR_SIZE(arr) (sizeof(arr) / sizeof((arr)[0]))
 # define ENC_MSG_SIZE(data) (ARR_SIZE(data) + SGX_AESGCM_MAC_SIZE + SGX_AESGCM_IV_SIZE)
 
@@ -247,14 +244,14 @@ int io_enclave(struct timespec *i_rec, struct timespec *o_rec, size_t count, siz
 
 		// record input times
 		clock_gettime(CLOCK_PROCESS_CPUTIME_ID, &start);
-		ecall_data_in(global_eid, data, data_len);
+		ecall_data_in_malloc(global_eid, data, data_len);
 		clock_gettime(CLOCK_PROCESS_CPUTIME_ID, &end);
 		i_rec[i] = timespec_diff(start, end);
 
 
 		// record output times
 		clock_gettime(CLOCK_PROCESS_CPUTIME_ID, &start);
-		ecall_data_out(global_eid, data, data_len);
+		ecall_data_out_malloc(global_eid, data, data_len);
 		clock_gettime(CLOCK_PROCESS_CPUTIME_ID, &end);
 		o_rec[i] = timespec_diff(start, end);
 	}
@@ -318,13 +315,13 @@ void print_nanosec_recordings(struct timespec *recordings, size_t length)
 		printf("Recording %i; %lu (s); %lu (ns)\n", i+1 , recordings[i].tv_sec, recordings[i].tv_nsec);
 }
 
-void print_test_counts()
-{
-	printf("RW Count: %d repeats\n", RW_COUNT);
-	printf("CD Count: %d repeats\n", ENC_COUNT);
-	printf("IO Count: %d repeats\n", IO_COUNT);
-	printf("IO data length: %d bytes", DATA_LEN);
+static inline void assert_exit(int retval) {
+	if (retval != 0) {
+		printf("Error: bad enclave return value 0x%x\n", retval);
+		exit(-1);
+	}
 }
+
 
 /* Application entry */
 int SGX_CDECL main(int argc, char *argv[])
@@ -335,56 +332,74 @@ int SGX_CDECL main(int argc, char *argv[])
     /* Changing dir to where the executable is.*/
     char absolutePath [MAX_PATH]; // @suppress("Symbol is not resolved")
     char *ptr = NULL;
+    size_t rec_count;
+    size_t data_len;
+
 
     ptr = realpath(dirname(argv[0]),absolutePath);
 
     if( chdir(absolutePath) != 0)
     		abort();
 
-    sgx_status_t ret = SGX_ERROR_UNEXPECTED;
-    int ecall_return = 0;
+    if (argc >= 2)
+    	rec_count = strtol(argv[1], NULL, 10);
+    else
+    	rec_count = DEF_COUNT;
 
-    // run tests
-    struct timespec w_recordings[RW_COUNT];
-    struct timespec r_recordings[RW_COUNT];
-    struct timespec c_recordings[ENC_COUNT];
-    struct timespec d_recordings[ENC_COUNT];
-    struct timespec i_recordings[IO_COUNT];
-    struct timespec o_recordings[IO_COUNT];
-    struct timespec enc_recordings[AES_COUNT];
-    struct timespec dec_recordings[AES_COUNT];
+    if (argc == 3)
+    	data_len = strtol(argv[1], NULL, 10);
+    else
+    	data_len = DATA_LEN;
+
+    if (rec_count <= 0 || data_len <= 0) {
+    	puts("Error: expected number larger than 0 for recording count and data length");
+    	return -1;
+    }
+
+    printf("| Count:    %lu\t|\n", rec_count);
+    printf("| Data len: %lu\t|\n", data_len);
+
+    struct timespec *rec_one = (struct timespec *) malloc(rec_count * sizeof(struct timespec));
+    struct timespec *rec_two = (struct timespec *) malloc(rec_count * sizeof(struct timespec));
+
+    if (rec_one == NULL || rec_two == NULL) {
+    	puts("Error: unable to allocate the memory required for value recording");
+    	return -1;
+    }
 
     // read/write enclave data test
-    ecall_return = rw_enclave_data(w_recordings, r_recordings, RW_COUNT);
+    assert_exit(rw_enclave_data(rec_one, rec_two, rec_count));
     // print results
     puts("\n-- Write recordings --");
-    print_nanosec_recordings(w_recordings, RW_COUNT);
+    print_nanosec_recordings(rec_one, rec_count);
     puts("\n-- Read recordings --");
-    print_nanosec_recordings(r_recordings, RW_COUNT);
+    print_nanosec_recordings(rec_two, rec_count);
 
     // construct/destruct enclave test
-    ecall_return = const_dest_enclave(c_recordings, d_recordings, ENC_COUNT);
+    assert_exit(const_dest_enclave(rec_one, rec_two, rec_count));
     // print results
     puts("\n-- Construct recordings --");
-    print_nanosec_recordings(c_recordings, ENC_COUNT);
+    print_nanosec_recordings(rec_one, rec_count);
     puts("\n-- Destruct recordings --");
-    print_nanosec_recordings(d_recordings, ENC_COUNT);
-
+    print_nanosec_recordings(rec_two, rec_count);
 
     // input/output enclave test
-    ecall_return = io_enclave(i_recordings, o_recordings, IO_COUNT, DATA_LEN);
+    assert_exit(io_enclave(rec_one, rec_two, rec_count, data_len));
     // print results
     puts("\n-- Input recordings --");
-    print_nanosec_recordings(i_recordings, IO_COUNT);
+    print_nanosec_recordings(rec_one, rec_count);
     puts("\n-- Output recordings --");
-    print_nanosec_recordings(o_recordings, IO_COUNT);
+    print_nanosec_recordings(rec_two, rec_count);
 
     // encryption/decryption enclave test
-    ecall_return = enc_dec_data(enc_recordings, dec_recordings, AES_COUNT, DATA_LEN);
+    assert_exit(enc_dec_data(rec_one, rec_two, rec_count, data_len));
     puts("\n-- Encryption recordings --");
-    print_nanosec_recordings(enc_recordings, AES_COUNT);
+    print_nanosec_recordings(rec_one, rec_count);
     puts("\n-- Decryption recordings --");
-    print_nanosec_recordings(dec_recordings, AES_COUNT);
+    print_nanosec_recordings(rec_two, rec_count);
 
-    return ecall_return;
+    free(rec_one);
+    free(rec_two);
+
+    return 0;
 }
