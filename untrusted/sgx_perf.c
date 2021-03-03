@@ -24,6 +24,7 @@
 
 /* Global EID shared by multiple threads */
 sgx_enclave_id_t global_eid = 0;
+struct timespec * OCALL_RECORDINGS = {0x0};
 
 typedef struct _sgx_errlist_t {
     sgx_status_t err;
@@ -188,6 +189,17 @@ void ocall_enclave_str(const char *str)
      * the input string to prevent buffer overflow. 
      */
     printf("%s", str);
+}
+
+void ocall_data_out(const char *text_in, size_t len_in)
+{
+    // data sent by the enclave is ignored
+}
+
+void ocall_enclave_time(const struct timespec test_result, int test_number)
+{
+    // records the given time
+    OCALL_RECORDINGS[test_number] = test_result;
 }
 
 int rw_enclave_data(struct timespec *w_rec, struct timespec *r_rec, size_t count)
@@ -406,6 +418,14 @@ int SGX_CDECL main(int argc, char *argv[])
 
     free(rec_one);
     free(rec_two);
+
+    // ocall enclave test
+    OCALL_RECORDINGS = (struct timespec *) malloc(rec_count * sizeof(struct timespec));
+    begin_ocall_test(rec_count, data_len);
+    puts("\n-- ocall recordings --")
+    print_nanosec_recordings(OCALL_RECORDINGS, rec_count);
+
+    free(OCALL_RECORDINGS);
 
     return 0;
 }

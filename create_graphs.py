@@ -161,6 +161,14 @@ def nsec_to_msec(nsec):
     return nsec / 1_000_000
 
 
+def percentage_change(test_one: TestData, test_two: TestData):
+    """ Calculates the percentage change between two tests """
+    top = test_two[Stat.MEAN] - test_one[Stat.MEAN]
+    bottom = test_one[Stat.MEAN]
+
+    return (top / bottom) * 100
+
+
 if __name__ == '__main__':
     system_set = SystemSet()
     system_set.add_system("SGX Driver", ResultSet(OUTPUT_FILENAME))

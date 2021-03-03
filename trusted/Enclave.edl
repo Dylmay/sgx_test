@@ -9,6 +9,10 @@ enclave {
      */
     untrusted {
         void ocall_enclave_str([in, string] const char *str);
+
+        // ocall speed testing
+        void ocall_data_out([in, size=len_in] const char *text_in, size_t len_in);
+        void ocall_enclave_time([in] const struct timespec test_results, [in] test_no);
     };
 
 
@@ -16,12 +20,19 @@ enclave {
 		public int ecall_enclave_print();
         public void ecall_rand_write();
         public int ecall_rand_read();
+
+        // io testing
         public void ecall_data_in([in, size=len] char *buf ,size_t len);
         public void ecall_data_out([in, out, size=len] char *data ,size_t len);
         public void ecall_data_in_malloc([in, size=len] char *buf, size_t len);
         public void ecall_data_out_malloc([in, out, size=len] char *data, size_t len);
         public void ecall_aesgcm_init();
+
+        // encryption / decryption testing
         public void ecall_aesgcm_enc([in, size=len_in] char *text_in, size_t len_in, [out, size=len_out] char *enc_out, size_t len_out);
         public void ecall_aesgcm_dec([in, size=len_in] char *enc_in, size_t len_in, [out, size=len_out] char *text_out, size_t len_out);
+
+        // ocall speed testing
+        public void begin_ocall_test([in] size_t iteration_count, [in] size_t data_len);
     };
 };
