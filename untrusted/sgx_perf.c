@@ -342,18 +342,20 @@ int SGX_CDECL main(int argc, char *argv[])
     if( chdir(absolutePath) != 0)
     		abort();
 
+    //check for user-supplied iteration count
     if (argc >= 2)
     	rec_count = strtol(argv[1], NULL, 10);
     else
     	rec_count = DEF_COUNT;
 
+    //check for user-supplied data length, if none is passed only run const_dest tests
     if (argc == 3)
     	data_len = strtol(argv[2], NULL, 10);
     else
-    	data_len = DATA_LEN;
+    	data_len = 0;
 
-    if (rec_count <= 0 || data_len <= 0) {
-    	puts("Error: expected number larger than 0 for recording count and data length");
+    if (rec_count <= 0 || data_len < 0) {
+    	puts("Error: expected number larger than 0 for recording count and a non-negative data length");
     	return -1;
     }
 
@@ -368,36 +370,30 @@ int SGX_CDECL main(int argc, char *argv[])
     	return -1;
     }
 
-    // read/write enclave data test
-    //assert_exit(rw_enclave_data(rec_one, rec_two, rec_count));
-    // print results
-    //puts("\n-- Write recordings --");
-    //print_nanosec_recordings(rec_one, rec_count);
-    //puts("\n-- Read recordings --");
-    //print_nanosec_recordings(rec_two, rec_count);
-
-    // construct/destruct enclave test
-    //assert_exit(const_dest_enclave(rec_one, rec_two, rec_count));
-    // print results
-    puts("\n-- Construct recordings --");
-    print_nanosec_recordings(rec_one, rec_count);
-    puts("\n-- Destruct recordings --");
-    print_nanosec_recordings(rec_two, rec_count);
-
     // input/output enclave test
-    assert_exit(io_enclave(rec_one, rec_two, rec_count, data_len));
-    // print results
-    puts("\n-- Input recordings --");
-    print_nanosec_recordings(rec_one, rec_count);
-    puts("\n-- Output recordings --");
-    print_nanosec_recordings(rec_two, rec_count);
+    if (data_len) {
+		assert_exit(io_enclave(rec_one, rec_two, rec_count, data_len));
+		// print results
+		puts("\n-- Input recordings --");
+		print_nanosec_recordings(rec_one, rec_count);
+		puts("\n-- Output recordings --");
+		print_nanosec_recordings(rec_two, rec_count);
 
-    // encryption/decryption enclave test
-    assert_exit(enc_dec_data(rec_one, rec_two, rec_count, data_len));
-    puts("\n-- Encryption recordings --");
-    print_nanosec_recordings(rec_one, rec_count);
-    puts("\n-- Decryption recordings --");
-    print_nanosec_recordings(rec_two, rec_count);
+		// encryption/decryption enclave test
+		assert_exit(enc_dec_data(rec_one, rec_two, rec_count, data_len));
+		puts("\n-- Encryption recordings --");
+		print_nanosec_recordings(rec_one, rec_count);
+		puts("\n-- Decryption recordings --");
+		print_nanosec_recordings(rec_two, rec_count);
+    } else {
+		 // construct/destruct enclave test
+		assert_exit(const_dest_enclave(rec_one, rec_two, rec_count));
+		// print results
+		puts("\n-- Construct recordings --");
+		print_nanosec_recordings(rec_one, rec_count);
+		puts("\n-- Destruct recordings --");
+		print_nanosec_recordings(rec_two, rec_count);
+    }
 
     free(rec_one);
     free(rec_two);
