@@ -13,7 +13,7 @@
 # define SGX_AESGCM_IV_SIZE 12
 
 # define DEF_COUNT 10000
-# define DATA_LEN 10000
+# define DATA_LEN 1000
 # define ARR_SIZE(arr) (sizeof(arr) / sizeof((arr)[0]))
 # define ENC_MSG_SIZE(data) (ARR_SIZE(data) + SGX_AESGCM_MAC_SIZE + SGX_AESGCM_IV_SIZE)
 
@@ -255,6 +255,8 @@ int io_enclave(struct timespec *i_rec, struct timespec *o_rec, size_t count, siz
 		o_rec[i] = timespec_diff(start, end);
 	}
 
+	ecall_free(global_eid);
+
 	return sgx_destroy_enclave(global_eid);
 }
 
@@ -375,7 +377,7 @@ int SGX_CDECL main(int argc, char *argv[])
     //print_nanosec_recordings(rec_two, rec_count);
 
     // construct/destruct enclave test
-    assert_exit(const_dest_enclave(rec_one, rec_two, rec_count));
+    //assert_exit(const_dest_enclave(rec_one, rec_two, rec_count));
     // print results
     puts("\n-- Construct recordings --");
     print_nanosec_recordings(rec_one, rec_count);

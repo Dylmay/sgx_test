@@ -9,7 +9,7 @@
 #include "Enclave_t.h"  /* print_string */
 
 #define DATA_SIZE 1000
-#define MAX_DATA_MALLOC 1000
+#define MAX_DATA_MALLOC 10000
 #define BUFFER_LEN 2048
 
 #define IV_PTR(buffer) (buffer + SGX_AESGCM_MAC_SIZE)
@@ -80,7 +80,7 @@ void ecall_data_out(char *data, size_t len)
 void ecall_data_in_malloc(char *data, size_t len)
 {
 	if (len < MAX_DATA_MALLOC) {
-		if (&DATA_PTR != 0x0)
+		if (&DATA_PTR != NULL)
 			free(DATA_PTR);
 
 		DATA_PTR = calloc(len, sizeof(char));
@@ -92,6 +92,12 @@ void ecall_data_out_malloc(char *data, size_t len)
 {
 	if (len < MAX_DATA_MALLOC)
 		memcpy(data, DATA_PTR, len);
+}
+
+void ecall_free()
+{
+	free(DATA_PTR);
+	DATA_PTR = NULL;
 }
 
 
@@ -108,7 +114,7 @@ void print_hex(char *data, size_t data_len)
 
 void ecall_aesgcm_enc(char *text_in, size_t len_in, char *enc_out, size_t len_out)
 {
-	uint8_t *buffer = calloc(BUFFER_LEN, sizeof(uint8_t));
+	uint8_t *buffer = calloc(len_out, sizeof(uint8_t));
 	//sets iv
 	sgx_read_rand(IV_PTR(buffer), SGX_AESGCM_IV_SIZE);
 
@@ -130,7 +136,7 @@ void ecall_aesgcm_enc(char *text_in, size_t len_in, char *enc_out, size_t len_ou
 
 void ecall_aesgcm_dec(char *enc_in, size_t len_in, char *text_out, size_t len_out)
 {
-	uint8_t *buffer = calloc(BUFFER_LEN, sizeof(uint8_t));
+	uint8_t *buffer = calloc(len_out, sizeof(uint8_t));
 
 	sgx_status_t res = {0};
 	res = sgx_rijndael128GCM_decrypt(&AES_KEY, //key
