@@ -8,8 +8,10 @@ import os
 import json
 
 OUTPUT_FILENAME = "output.txt"
-DATA_LEN_INDICATOR = "Data"
-
+DATA_LEN_INDICATOR = "Data len"
+ITER_INDICATOR = "Count"
+SETTING_INDICATOR = '|'
+HEADER_INDICATOR = "--"
 
 class Test:
     """ Testing types """
@@ -54,7 +56,6 @@ class TestData(dict):
 
 class ResultSet(dict):
     """ Class used to represent data taken from testing """
-    HEADER_INDICATOR = "--"
 
     def __init__(self, filename: str):
         super().__init__()
@@ -68,7 +69,7 @@ class ResultSet(dict):
         file = open(filename)
 
         for line in file:
-            if ResultSet.HEADER_INDICATOR in line:
+            if HEADER_INDICATOR in line:
                 if current_header:
                     self.setdefault(current_header, TestData(readings))
                 current_header = line.strip("- \n").split(" ")[0].capitalize()
@@ -200,17 +201,24 @@ def percentage_change(test_one: TestData, test_two: TestData):
     return (top / bottom) * 100
 
 
-def get_data_len(file: str) -> str:
+def get_data_len(file: str):
     """ Gets the bytes length used in testing """
-    file = open(file)
+    with open(file) as file:
+        while line := file.readline():
+            if SETTING_INDICATOR and DATA_LEN_INDICATOR in line:
+                return int(line.split()[3])
 
-    while line := file.readline():
-        if line.strip() != "":
-            line = line.split(' ')
-            if line[1] == DATA_LEN_INDICATOR:
-                return line[3] + " bytes"
+    return None
 
-    return "NO"
+
+def get_data_count(file: str):
+    """ Gets the number of iterations/repeats per test """
+    with open(file) as file:
+        while line := file.readline():
+            if SETTING_INDICATOR and ITER_INDICATOR in line:
+                return int(line.split()[3])
+
+    return None
 
 
 def parse_result_folder(folder_name: str) -> DataSet:
@@ -222,7 +230,10 @@ def parse_result_folder(folder_name: str) -> DataSet:
 
     for file in files:
         file = folder_name + '/' + file
-        data_set.add_data(get_data_len(file), ResultSet(file))
+        data_len = get_data_len(file)
+
+        if data_len:
+            data_set.add_data(str(data_len) + " bytes", ResultSet(file))
 
     return data_set
 
