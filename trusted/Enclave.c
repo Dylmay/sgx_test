@@ -9,8 +9,6 @@
 #include "Enclave_t.h"  /* print_string */
 
 #define DATA_SIZE 1000
-#define MAX_DATA_MALLOC 10000
-#define BUFFER_LEN 2048
 
 #define IV_PTR(buffer) (buffer + SGX_AESGCM_MAC_SIZE)
 #define MSG_PTR(buffer) (buffer + SGX_AESGCM_MAC_SIZE + SGX_AESGCM_IV_SIZE)
@@ -18,7 +16,7 @@
 
 char ENCLAVE_DATA[DATA_SIZE];
 
-void *DATA_PTR = 0x0;
+void *DATA_PTR = NULL;
 
 sgx_aes_gcm_128bit_key_t AES_KEY;
 
@@ -60,7 +58,7 @@ void ecall_rand_write()
 {
 	for (int i = 0; i < DATA_SIZE; i++) {
 		int rn = rand() % DATA_SIZE;
-		ENCLAVE_DATA[rn] = rn;
+		ENCLAVE_DATA[i] = rn;
 	}
 }
 
@@ -79,19 +77,16 @@ void ecall_data_out(char *data, size_t len)
 
 void ecall_data_in_malloc(char *data, size_t len)
 {
-	if (len < MAX_DATA_MALLOC) {
-		if (&DATA_PTR != NULL)
-			free(DATA_PTR);
+	if (&DATA_PTR != NULL)
+		free(DATA_PTR);
 
-		DATA_PTR = calloc(len, sizeof(char));
-		memcpy(DATA_PTR, data, len);
-	}
+	DATA_PTR = calloc(len, sizeof(char));
+	memcpy(DATA_PTR, data, len);
 }
 
 void ecall_data_out_malloc(char *data, size_t len)
 {
-	if (len < MAX_DATA_MALLOC)
-		memcpy(data, DATA_PTR, len);
+	memcpy(data, DATA_PTR, len);
 }
 
 void ecall_free()
