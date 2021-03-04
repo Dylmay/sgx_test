@@ -14,6 +14,8 @@ update_enc_size() {
   make update_empty > /dev/null
 }
 
+make
+
 echo "Start time: `date`"
 echo
 
