@@ -12,6 +12,8 @@ DATA_LEN_INDICATOR = "Data len"
 ITER_INDICATOR = "Count"
 SETTING_INDICATOR = '|'
 HEADER_INDICATOR = "--"
+TRACE_INDICATOR = "#"
+SEPARATOR = "_"
 
 class Test:
     """ Testing types """
@@ -78,10 +80,11 @@ class ResultSet(dict):
                 continue
 
             if current_header:
-                if line.strip() != "":
-                    recording_result = line.split(";")
-                    readings.append(sec_to_nsec(int(recording_result[1].strip("\n (ns)")))
-                                    + int(recording_result[2].strip("\n (ns)")))
+                if line.strip(" " + SEPARATOR) != "":
+                    if HEADER_INDICATOR not in line:
+                        recording_result = line.split(";")
+                        readings.append(sec_to_nsec(int(recording_result[1].strip("\n (ns)")))
+                                        + int(recording_result[2].strip("\n (ns)")))
 
         if current_header and readings != []:
             self.setdefault(current_header, TestData(readings))
@@ -179,7 +182,7 @@ def draw_line_chart(test_type, data: DataSet, colour='b', draw_error=True):
     if draw_error:
         pyplot.errorbar(x, y, yerr=err, fmt='.', capsize=4)
 
-    pyplot.plot(x, y)
+    pyplot.plot(x, y, color=colour)
     pyplot.show()
 
 
@@ -251,4 +254,4 @@ if __name__ == '__main__':
 
     draw_bar_chart(Test.ENC, system_set, 'b')
     draw_bar_chart(Test.OUT, system_set, 'y')
-    draw_line_chart(Test.DEC, native_data_set)
+    draw_line_chart(Test.DEC, native_data_set, 'y')
