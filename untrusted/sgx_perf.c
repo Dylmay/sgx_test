@@ -181,7 +181,7 @@ void ocall_enclave_str(const char *str)
     /* Proxy/Bridge will check the length and null-terminate 
      * the input string to prevent buffer overflow. 
      */
-    printf("%s", str);
+    printf("%s", str); fflush(stdout);
 }
 
 int rw_enclave_data(struct timespec *w_rec, struct timespec *r_rec, size_t count)
@@ -209,21 +209,46 @@ int rw_enclave_data(struct timespec *w_rec, struct timespec *r_rec, size_t count
 	return sgx_destroy_enclave(global_eid);
 }
 
+int ecall_test(struct timespec *e_rec, size_t count)
+{
+	if (initialize_enclave() < 0) return -1;
+	printf("#ecall: constructed enclave\n"); fflush(stdout);
+
+	for (size_t i = 0 ; i < count; i++) {
+		struct timespec start, end;
+
+		//call empty ecall
+		printf("#ecall: iter %lu; calling enclave\n", i+1); fflush(stdout);
+		clock_gettime(CLOCK_PROCESS_CPUTIME_ID, &start);
+		ecall_empty(global_eid);
+		clock_gettime(CLOCK_PROCESS_CPUTIME_ID, &end);
+		printf("#ecall: iter %lu; called enclave, recording\n", i+1); fflush(stdout);
+		e_rec[i] = timespec_diff(start, end);
+
+	}
+
+	return sgx_destroy_enclave(global_eid);
+}
+
 int const_dest_enclave(struct timespec *const_rec, struct timespec *dest_rec, size_t count)
 {
 	for (size_t i = 0; i < count; i++) {
 		struct timespec start, end;
 
 		//construct enclave
+		printf("#const_dest: iter %lu; constructing enclave\n", i+1); fflush(stdout);
 		clock_gettime(CLOCK_PROCESS_CPUTIME_ID, &start);
 		if (initialize_enclave() < 0) return -1;
 		clock_gettime(CLOCK_PROCESS_CPUTIME_ID, &end);
+		printf("#const_dest: iter %lu; constructed enclave, recording\n", i+1); fflush(stdout);
 		const_rec[i] = timespec_diff(start, end);
 
 		//destruct enclave
+		printf("#const_dest: iter %lu; destructing enclave\n", i+1); fflush(stdout);
 		clock_gettime(CLOCK_PROCESS_CPUTIME_ID, &start);
 		if (sgx_destroy_enclave(global_eid) < 0) return -1;
 		clock_gettime(CLOCK_PROCESS_CPUTIME_ID, &end);
+		printf("#const_dest: iter %lu; destructed enclave, recording\n", i+1); fflush(stdout);
 		dest_rec[i] = timespec_diff(start, end);
 	}
 
@@ -233,28 +258,34 @@ int const_dest_enclave(struct timespec *const_rec, struct timespec *dest_rec, si
 int io_enclave(struct timespec *i_rec, struct timespec *o_rec, size_t count, size_t data_len)
 {
 	if (initialize_enclave() < 0) return -1;
+	printf("#io: initialized enclave\n"); fflush(stdout);
 
 	//io data
-	char data[data_len];
+	char *data = (char*) calloc(data_len, sizeof(char));
 	rand_arr(data, data_len);
+	printf("#io: initialized test data\n"); fflush(stdout);
 
 	for (size_t i = 0; i < count; i++) {
 		struct timespec start, end;
 
 		// record input times
+		printf("#io: iter %lu; sending data\n", i+1); fflush(stdout);
 		clock_gettime(CLOCK_PROCESS_CPUTIME_ID, &start);
 		ecall_data_in_malloc(global_eid, data, data_len);
 		clock_gettime(CLOCK_PROCESS_CPUTIME_ID, &end);
+		printf("#io: iter %lu; sent data, recording\n", i+1); fflush(stdout);
 		i_rec[i] = timespec_diff(start, end);
 
-
 		// record output times
+		printf("#io: iter %lu; retrieving data\n", i+1); fflush(stdout);
 		clock_gettime(CLOCK_PROCESS_CPUTIME_ID, &start);
 		ecall_data_out_malloc(global_eid, data, data_len);
 		clock_gettime(CLOCK_PROCESS_CPUTIME_ID, &end);
+		printf("#io: iter %lu; retrieved data, recording\n", i+1); fflush(stdout);
 		o_rec[i] = timespec_diff(start, end);
 	}
 
+	free(data);
 	ecall_free(global_eid);
 
 	return sgx_destroy_enclave(global_eid);
@@ -269,10 +300,13 @@ void print_hex(char *data, size_t data_len)
 int enc_dec_data(struct timespec *e_rec, struct  timespec *d_rec, size_t count, size_t data_len)
 {
 	if (initialize_enclave() < 0) return -1;
+	printf("#enc_dec: initialized enclave\n"); fflush(stdout);
 
+	//char *data = (char*) calloc(data_len, sizeof(char));
 	char data[data_len];
 	char *enc_buffer = (char*) calloc(ENC_MSG_SIZE(data), sizeof(char));
 	char *dec_buffer = (char*) calloc(data_len, sizeof(char));
+	printf("#enc_dec: initialized test data\n"); fflush(stdout);
 
 	rand_arr(data, data_len);
 	ecall_aesgcm_init(global_eid);
@@ -281,18 +315,23 @@ int enc_dec_data(struct timespec *e_rec, struct  timespec *d_rec, size_t count, 
 		struct timespec start, end;
 
 		//record encryption times
+		printf("#enc_dec: iter %lu; encrypting data\n", i+1); fflush(stdout);
 		clock_gettime(CLOCK_PROCESS_CPUTIME_ID, &start);
 		ecall_aesgcm_enc(global_eid, data, data_len, enc_buffer, ENC_MSG_SIZE(data));
 		clock_gettime(CLOCK_PROCESS_CPUTIME_ID, &end);
+		printf("#enc_dec: iter %lu; data encrypted, recording\n", i+1); fflush(stdout);
 		e_rec[i] = timespec_diff(start, end);
 
 		//record decryption times
+		printf("#enc_dec: iter %lu; decrypting data\n", i+1); fflush(stdout);
 		clock_gettime(CLOCK_PROCESS_CPUTIME_ID, &start);
 		ecall_aesgcm_dec(global_eid, enc_buffer, ENC_MSG_SIZE(data), dec_buffer, data_len);
 		clock_gettime(CLOCK_PROCESS_CPUTIME_ID, &end);
+		printf("#enc_dec: iter %lu; data decrypted, recording\n", i+1); fflush(stdout);
 		d_rec[i] = timespec_diff(start, end);
 	}
 
+	//free(data);
 	free(enc_buffer);
 	free(dec_buffer);
 	return sgx_destroy_enclave(global_eid);
@@ -342,6 +381,15 @@ int SGX_CDECL main(int argc, char *argv[])
     if( chdir(absolutePath) != 0)
     		abort();
 
+    if (argc < 2) {
+    	puts("At least two arguments required");
+    	puts("Help:");
+    	puts("\t./sgx_perf {test iterations} {data len}");
+    	puts("\ttest iterations = number of times to repeat a test");
+    	puts("\tdata len (optional) = if present, run the data tests with the given length, else, run the non-data length dependant tests");
+    	return 0;
+    }
+
     //check for user-supplied iteration count
     if (argc >= 2)
     	rec_count = strtol(argv[1], NULL, 10);
@@ -372,27 +420,44 @@ int SGX_CDECL main(int argc, char *argv[])
 
     // input/output enclave test
     if (data_len) {
+		puts("_______________________________________________________________");
+    	printf("#main: beginning io test\n"); fflush(stdout);
 		assert_exit(io_enclave(rec_one, rec_two, rec_count, data_len));
+    	printf("#main: ending io test. Printing results\n"); fflush(stdout);
 		// print results
 		puts("\n-- Input recordings --");
 		print_nanosec_recordings(rec_one, rec_count);
 		puts("\n-- Output recordings --");
 		print_nanosec_recordings(rec_two, rec_count);
 
+		puts("\n_______________________________________________________________");
 		// encryption/decryption enclave test
+    	printf("#main: beginning enc/dec test.\n"); fflush(stdout);
 		assert_exit(enc_dec_data(rec_one, rec_two, rec_count, data_len));
+    	printf("#main: ending enc/dec test. Printing results\n"); fflush(stdout);
 		puts("\n-- Encryption recordings --");
 		print_nanosec_recordings(rec_one, rec_count);
 		puts("\n-- Decryption recordings --");
 		print_nanosec_recordings(rec_two, rec_count);
     } else {
 		 // construct/destruct enclave test
+    	printf("#main: beginning const/dest test. Printing results\n"); fflush(stdout);
 		assert_exit(const_dest_enclave(rec_one, rec_two, rec_count));
+    	printf("#main: ending const/dest test. Printing results\n"); fflush(stdout);
 		// print results
 		puts("\n-- Construct recordings --");
 		print_nanosec_recordings(rec_one, rec_count);
 		puts("\n-- Destruct recordings --");
 		print_nanosec_recordings(rec_two, rec_count);
+
+		puts("\n_______________________________________________________________");
+		//ecall enclave test
+    	printf("#main: beginning empty ecall test. Printing results\n"); fflush(stdout);
+		assert_exit(ecall_test(rec_one, rec_count));
+    	printf("#main: ending empty ecall test. Printing results\n"); fflush(stdout);
+		// print results
+		puts("\n-- Ecall recordings --");
+		print_nanosec_recordings(rec_one, rec_count);
     }
 
     free(rec_one);
