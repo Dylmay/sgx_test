@@ -302,8 +302,7 @@ int enc_dec_data(struct timespec *e_rec, struct  timespec *d_rec, size_t count, 
 	if (initialize_enclave() < 0) return -1;
 	printf("#enc_dec: initialized enclave\n"); fflush(stdout);
 
-	//char *data = (char*) calloc(data_len, sizeof(char));
-	char data[data_len];
+	char *data = (char*) calloc(data_len, sizeof(char));
 	char *enc_buffer = (char*) calloc(ENC_MSG_SIZE(data), sizeof(char));
 	char *dec_buffer = (char*) calloc(data_len, sizeof(char));
 	printf("#enc_dec: initialized test data\n"); fflush(stdout);
@@ -331,7 +330,7 @@ int enc_dec_data(struct timespec *e_rec, struct  timespec *d_rec, size_t count, 
 		d_rec[i] = timespec_diff(start, end);
 	}
 
-	//free(data);
+	free(data);
 	free(enc_buffer);
 	free(dec_buffer);
 	return sgx_destroy_enclave(global_eid);

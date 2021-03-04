@@ -110,7 +110,8 @@ void print_hex(char *data, size_t data_len)
 
 void ecall_aesgcm_enc(char *text_in, size_t len_in, char *enc_out, size_t len_out)
 {
-	uint8_t *buffer = calloc(len_out, sizeof(uint8_t));
+	//uint8_t *buffer = calloc(len_out, sizeof(uint8_t));
+	uint8_t *buffer = (uint8_t *) enc_out;
 	//sets iv
 	sgx_read_rand(IV_PTR(buffer), SGX_AESGCM_IV_SIZE);
 
@@ -126,13 +127,14 @@ void ecall_aesgcm_enc(char *text_in, size_t len_in, char *enc_out, size_t len_ou
 	if (res != 0)
 		printf("Error encrypting: 0x%x", res);
 
-	memcpy(enc_out, buffer, len_out);
-	free(buffer);
+	//memcpy(enc_out, buffer, len_out);
+	//free(buffer);
 }
 
 void ecall_aesgcm_dec(char *enc_in, size_t len_in, char *text_out, size_t len_out)
 {
-	uint8_t *buffer = calloc(len_out, sizeof(uint8_t));
+	//uint8_t *buffer = calloc(len_out, sizeof(uint8_t));
+	uint8_t *buffer = (uint8_t *) text_out;
 
 	sgx_status_t res = {0};
 	res = sgx_rijndael128GCM_decrypt(&AES_KEY, //key
@@ -146,8 +148,8 @@ void ecall_aesgcm_dec(char *enc_in, size_t len_in, char *text_out, size_t len_ou
 	if (res != 0)
 		printf("Error decrypting: 0x%x", res);
 
-	memcpy(text_out, buffer, len_out);
-	free(buffer);
+	//memcpy(text_out, buffer, len_out);
+	//free(buffer);
 }
 
 void ecall_empty()
