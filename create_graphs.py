@@ -5,15 +5,19 @@ from matplotlib import pyplot
 import numpy
 
 import os
-import json
 
-OUTPUT_FILENAME = "output.txt"
-DATA_LEN_INDICATOR = "Data len"
-ITER_INDICATOR = "Count"
-SETTING_INDICATOR = '|'
 HEADER_INDICATOR = "--"
 TRACE_INDICATOR = "#"
 SEPARATOR = "_"
+
+
+class Setting:
+    INDICATOR = '|'
+    DATA_LEN = "Data len"
+    DATA_SIZE = "Data size"
+    ENCLAVE = "Enclave .so"
+    ITER = "Count"
+
 
 class Test:
     """ Testing types """
@@ -63,7 +67,7 @@ class ResultSet(dict):
         super().__init__()
         self.__construct_result_set(filename)
 
-    def __construct_result_set(self, filename: str, folder_name=None):
+    def __construct_result_set(self, filename: str):
         """ Constructs/inits the result set """
         current_header = None
         readings = []
@@ -208,27 +212,32 @@ def get_data_len(file: str):
     """ Gets the bytes length used in testing """
     with open(file) as file:
         while line := file.readline():
-            if SETTING_INDICATOR and DATA_LEN_INDICATOR in line:
+            if Setting.INDICATOR and Setting.DATA_LEN in line:
                 return int(line.split()[3])
 
     return None
+
+
+def get_data_size(file: str):
+    with open(file) as file:
+        while line := file.readline():
+            if Setting.INDICATOR and Setting.DATA_LEN in line:
+                return int(line.split()[3])
 
 
 def get_data_count(file: str):
     """ Gets the number of iterations/repeats per test """
     with open(file) as file:
         while line := file.readline():
-            if SETTING_INDICATOR and ITER_INDICATOR in line:
+            if Setting.INDICATOR and Setting.ITER in line:
                 return int(line.split()[3])
 
     return None
 
 
-def parse_result_folder(folder_name: str) -> DataSet:
+def parse_data_result_folder(folder_name: str) -> DataSet:
     """ parses a result folder into usable result sets """
     files = os.listdir(folder_name)
-    print(files)
-
     data_set = DataSet()
 
     for file in files:
@@ -241,17 +250,22 @@ def parse_result_folder(folder_name: str) -> DataSet:
     return data_set
 
 
+def parse_size_result_folder(folder_name: str) -> DataSet:
+    files = os.listdir(folder_name)
+    data_set = DataSet()
+
+    for file in files:
+        file = folder_name + '/' + file
+        data_len = get_data_size(file)
+
+        if data_len:
+            data_set.add_data(str(data_len) + " bytes", ResultSet(file))
+
+    return data_set
+
+
 if __name__ == '__main__':
-    native_data_set = parse_result_folder('results/native')
+    native_data_set = parse_data_result_folder('results/native/data_var')
+    native_enclave_set = parse_size_result_folder('results/native/size_var')
 
-    print(json.dumps(native_data_set, indent=2))
-    print(native_data_set.get_test_stats(Test.IN, Stat.MEAN))
-
-    system_set = DataSet()
-    system_set.add_data("SGX Driver", ResultSet(OUTPUT_FILENAME))
-    system_set.add_data("SGX KVM", ResultSet(OUTPUT_FILENAME))
-    system_set.add_data("Virt SGX", ResultSet(OUTPUT_FILENAME))
-
-    draw_bar_chart(Test.ENC, system_set, 'b')
-    draw_bar_chart(Test.OUT, system_set, 'y')
     draw_line_chart(Test.DEC, native_data_set, 'y')
