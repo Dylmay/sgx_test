@@ -14,8 +14,7 @@
 
 # define DEF_COUNT 10000
 # define DATA_LEN 1000
-# define ARR_SIZE(arr) (sizeof(arr) / sizeof((arr)[0]))
-# define ENC_MSG_SIZE(data) (ARR_SIZE(data) + SGX_AESGCM_MAC_SIZE + SGX_AESGCM_IV_SIZE)
+# define ENC_MSG_SIZE(count) (count + SGX_AESGCM_MAC_SIZE + SGX_AESGCM_IV_SIZE)
 
 #include <sgx_urts.h>
 #include "sgx_perf.h"
@@ -303,7 +302,7 @@ int enc_dec_data(struct timespec *e_rec, struct  timespec *d_rec, size_t count, 
 	printf("#enc_dec: initialized enclave\n"); fflush(stdout);
 
 	char *data = (char*) calloc(data_len, sizeof(char));
-	char *enc_buffer = (char*) calloc(ENC_MSG_SIZE(data), sizeof(char));
+	char *enc_buffer = (char*) calloc(ENC_MSG_SIZE(data_len), sizeof(char));
 	char *dec_buffer = (char*) calloc(data_len, sizeof(char));
 	printf("#enc_dec: initialized test data\n"); fflush(stdout);
 
@@ -316,7 +315,7 @@ int enc_dec_data(struct timespec *e_rec, struct  timespec *d_rec, size_t count, 
 		//record encryption times
 		printf("#enc_dec: iter %lu; encrypting data\n", i+1); fflush(stdout);
 		clock_gettime(CLOCK_PROCESS_CPUTIME_ID, &start);
-		ecall_aesgcm_enc(global_eid, data, data_len, enc_buffer, ENC_MSG_SIZE(data));
+		ecall_aesgcm_enc(global_eid, data, data_len, enc_buffer, ENC_MSG_SIZE(data_len));
 		clock_gettime(CLOCK_PROCESS_CPUTIME_ID, &end);
 		printf("#enc_dec: iter %lu; data encrypted, recording\n", i+1); fflush(stdout);
 		e_rec[i] = timespec_diff(start, end);
@@ -324,7 +323,7 @@ int enc_dec_data(struct timespec *e_rec, struct  timespec *d_rec, size_t count, 
 		//record decryption times
 		printf("#enc_dec: iter %lu; decrypting data\n", i+1); fflush(stdout);
 		clock_gettime(CLOCK_PROCESS_CPUTIME_ID, &start);
-		ecall_aesgcm_dec(global_eid, enc_buffer, ENC_MSG_SIZE(data), dec_buffer, data_len);
+		ecall_aesgcm_dec(global_eid, enc_buffer, ENC_MSG_SIZE(data_len), dec_buffer, data_len);
 		clock_gettime(CLOCK_PROCESS_CPUTIME_ID, &end);
 		printf("#enc_dec: iter %lu; data decrypted, recording\n", i+1); fflush(stdout);
 		d_rec[i] = timespec_diff(start, end);
