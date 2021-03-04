@@ -23,6 +23,7 @@
 
 /* Global EID shared by multiple threads */
 sgx_enclave_id_t global_eid = 0;
+char *ENCLAVE = ENCLAVE_FILENAME;
 
 typedef struct _sgx_errlist_t {
     sgx_status_t err;
@@ -164,7 +165,7 @@ int initialize_enclave(void)
 
     /* Call sgx_create_enclave to initialize an enclave instance */
     /* Debug Support: set 2nd parameter to 1 */
-    ret = sgx_create_enclave(ENCLAVE_FILENAME, SGX_DEBUG_FLAG, NULL, NULL, &global_eid, NULL);
+    ret = sgx_create_enclave(ENCLAVE, SGX_DEBUG_FLAG, NULL, NULL, &global_eid, NULL);
 
     if (ret != SGX_SUCCESS) {
         print_error_message(ret);
@@ -405,9 +406,6 @@ int SGX_CDECL main(int argc, char *argv[])
     	return -1;
     }
 
-    printf("| Count:    %lu\t|\n", rec_count);
-    printf("| Data len: %lu\t|\n", data_len);
-
     struct timespec *rec_one = (struct timespec *) malloc(rec_count * sizeof(struct timespec));
     struct timespec *rec_two = (struct timespec *) malloc(rec_count * sizeof(struct timespec));
 
@@ -418,6 +416,9 @@ int SGX_CDECL main(int argc, char *argv[])
 
     // input/output enclave test
     if (data_len) {
+		printf("| Count:      %lu\t|\n", rec_count);
+		printf("| Data len:   %lu\t|\n", data_len);
+		printf("| Enclave.so: %s\t|\n", ENCLAVE);
 		puts("_______________________________________________________________");
     	printf("#main: beginning io test\n"); fflush(stdout);
 		assert_exit(io_enclave(rec_one, rec_two, rec_count, data_len));
@@ -437,8 +438,13 @@ int SGX_CDECL main(int argc, char *argv[])
 		print_nanosec_recordings(rec_one, rec_count);
 		puts("\n-- Decryption recordings --");
 		print_nanosec_recordings(rec_two, rec_count);
-    } else {
+
+	} else {
+		ENCLAVE = EMPTY_ENCLAVE;
+		printf("| Data size:   %lu\t|\n", DATA_SIZE);
+		printf("| Enclave .so: %s\t|\n", ENCLAVE);
 		 // construct/destruct enclave test
+		puts("_______________________________________________________________");
     	printf("#main: beginning const/dest test. Printing results\n"); fflush(stdout);
 		assert_exit(const_dest_enclave(rec_one, rec_two, rec_count));
     	printf("#main: ending const/dest test. Printing results\n"); fflush(stdout);

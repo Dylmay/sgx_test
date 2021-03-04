@@ -9,6 +9,8 @@
 #include "sgx_error.h"       /* sgx_status_t */
 #include "sgx_eid.h"     /* sgx_enclave_id_t */
 
+#define DATA_SIZE 750lu
+
 #ifndef TRUE
 # define TRUE 1
 #endif
@@ -19,6 +21,7 @@
 
 
 # define ENCLAVE_FILENAME "Enclave.signed.so"
+# define EMPTY_ENCLAVE "Empty.signed.so"
 
 extern sgx_enclave_id_t global_eid;    /* global enclave id */
 
