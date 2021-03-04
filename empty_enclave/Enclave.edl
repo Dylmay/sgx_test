@@ -1,0 +1,11 @@
+/* Enclave.edl - Top EDL file. */
+
+enclave {
+    untrusted {
+    };
+
+    trusted {
+        //ecall test
+        public void ecall_empty();
+    };
+};
