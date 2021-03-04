@@ -8,7 +8,7 @@
 #include "Enclave.h"
 #include "Enclave_t.h"  /* print_string */
 
-#define DATA_SIZE 1000
+#define DATA_SIZE 100
 
 #define IV_PTR(buffer) (buffer + SGX_AESGCM_MAC_SIZE)
 #define MSG_PTR(buffer) (buffer + SGX_AESGCM_MAC_SIZE + SGX_AESGCM_IV_SIZE)
@@ -64,16 +64,17 @@ void ecall_rand_write()
 
 void ecall_data_in(char* data, size_t len)
 {
-	if (len < DATA_SIZE)
-		memcpy(ENCLAVE_DATA, data, len);
+	char temp_data[len];
+
+	memcpy(temp_data, data, len);
 }
 
 void ecall_data_out(char *data, size_t len)
 {
-	if (len < DATA_SIZE)
-		memcpy(data, ENCLAVE_DATA, len);
-}
+	char temp_data[len];
 
+	memcpy(data, temp_data, len);
+}
 
 void ecall_data_in_malloc(char *data, size_t len)
 {
@@ -147,5 +148,10 @@ void ecall_aesgcm_dec(char *enc_in, size_t len_in, char *text_out, size_t len_ou
 
 	memcpy(text_out, buffer, len_out);
 	free(buffer);
+}
+
+void ecall_empty()
+{
+
 }
 

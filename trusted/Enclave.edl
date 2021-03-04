@@ -16,6 +16,9 @@ enclave {
 		public int ecall_enclave_print();
         public void ecall_rand_write();
         public int ecall_rand_read();
+        
+        //ecall test
+        public void ecall_empty();
 
         // io testing
         public void ecall_data_in([in, size=len] char *buf ,size_t len);
