@@ -14,6 +14,10 @@ update_enc_size() {
   make update_empty > /dev/null
 }
 
+fix_size_filename() {
+  sed -i "s/| Data size:.*/| Data size:      ${i}\t|/" "${1}/size_var/sgx_test_${i}_bytes.txt"
+}
+
 make
 
 echo "Start time: `date`"

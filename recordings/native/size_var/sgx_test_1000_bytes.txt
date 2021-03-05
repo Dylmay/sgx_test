@@ -1,4 +1,4 @@
-| Data size:    10	|
+| Data size:      1000	|
 | Enclave .so:    Empty.signed.so	|
 _______________________________________________________________
 #main: beginning const/dest test. Printing results

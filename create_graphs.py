@@ -26,6 +26,7 @@ class Test:
     WRITE = "Write"
     CONST = "Construct"
     DEST = "Destruct"
+    ECALL = "Ecall"
     IN = "Input"
     OUT = "Output"
     ENC = "Encryption"
@@ -236,7 +237,8 @@ def get_data_count(file: str):
     """ Gets the number of iterations/repeats per test """
     with open(file) as file:
         while line := file.readline():
-            if Setting.INDICATOR and Setting.ITER in line:
+            if Setting.INDICATOR and Setting.DATA_SIZE in line:
+                print(line.split())
                 return int(line.split()[3])
 
     return None
@@ -259,7 +261,9 @@ def parse_result_folder(folder_name: str, key_select) -> DataSet:
 
 
 if __name__ == '__main__':
-    native_size_set = parse_result_folder('recordings/native/data_var', get_data_size)
-    native_length_set = parse_result_folder('recordings/native/size_var', get_data_count)
+    native_len_set = parse_result_folder('recordings/native/data_var', get_data_size)
+    native_size_set = parse_result_folder('recordings/native/size_var', get_data_count)
 
-    draw_line_chart(Test.DEC, native_size_set, 'y')
+    print(json.dumps(native_size_set, indent=2))
+
+    draw_line_chart(Test.CONST, native_size_set, 'y')
