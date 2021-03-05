@@ -1,5 +1,6 @@
 #!/usr/bin/env python3
 #  -*- coding: UTF-8 -*-
+import json
 
 from matplotlib import pyplot
 import numpy
@@ -84,8 +85,8 @@ class ResultSet(dict):
                 continue
 
             if current_header:
-                if line.strip(" " + SEPARATOR) != "":
-                    if HEADER_INDICATOR not in line:
+                if line.strip(" \n" + SEPARATOR) != "":
+                    if HEADER_INDICATOR and TRACE_INDICATOR not in line:
                         recording_result = line.split(";")
                         readings.append(sec_to_nsec(int(recording_result[1].strip("\n (ns)")))
                                         + int(recording_result[2].strip("\n (ns)")))
@@ -115,7 +116,10 @@ class DataSet(dict):
         stat_bundle = ()
 
         for key, result in self.items():
-            stat_bundle += ((key, result[test_name][stat_type]),)
+            try:
+                stat_bundle += ((key, result[test_name][stat_type]),)
+            except KeyError:
+                continue
 
         return stat_bundle
 
@@ -219,10 +223,13 @@ def get_data_len(file: str):
 
 
 def get_data_size(file: str):
+    """ Gets the enclave data size used in testing"""
     with open(file) as file:
         while line := file.readline():
             if Setting.INDICATOR and Setting.DATA_LEN in line:
                 return int(line.split()[3])
+
+    return None
 
 
 def get_data_count(file: str):
@@ -235,28 +242,15 @@ def get_data_count(file: str):
     return None
 
 
-def parse_data_result_folder(folder_name: str) -> DataSet:
-    """ parses a result folder into usable result sets """
+def parse_result_folder(folder_name: str, key_select) -> DataSet:
+    """ parses an enclave size result folder into usable result sets """
     files = os.listdir(folder_name)
+    files = sorted(files, key=lambda filename: int(filename.split(SEPARATOR)[2]))
     data_set = DataSet()
 
     for file in files:
         file = folder_name + '/' + file
-        data_len = get_data_len(file)
-
-        if data_len:
-            data_set.add_data(str(data_len) + " bytes", ResultSet(file))
-
-    return data_set
-
-
-def parse_size_result_folder(folder_name: str) -> DataSet:
-    files = os.listdir(folder_name)
-    data_set = DataSet()
-
-    for file in files:
-        file = folder_name + '/' + file
-        data_len = get_data_size(file)
+        data_len = key_select(file)
 
         if data_len:
             data_set.add_data(str(data_len) + " bytes", ResultSet(file))
@@ -265,7 +259,7 @@ def parse_size_result_folder(folder_name: str) -> DataSet:
 
 
 if __name__ == '__main__':
-    native_data_set = parse_data_result_folder('results/native/data_var')
-    native_enclave_set = parse_size_result_folder('results/native/size_var')
+    native_size_set = parse_result_folder('recordings/native/data_var', get_data_size)
+    native_length_set = parse_result_folder('recordings/native/size_var', get_data_count)
 
-    draw_line_chart(Test.DEC, native_data_set, 'y')
+    draw_line_chart(Test.DEC, native_size_set, 'y')
