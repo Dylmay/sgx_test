@@ -114,4 +114,4 @@ Empty.signed.so: Empty.so
 	@$(SGX_ENCLAVE_SIGNER) sign -key $(TRUSTED_DIR)/Enclave_private.pem -enclave Empty.so -out $@ -config $(TRUSTED_DIR)/Enclave.config.xml
 	@echo "SIGN =>  $@"
 clean:
-	@rm -f Enclave.* $(TRUSTED_DIR)/Enclave_t.*  $(Enclave_C_Objects)
+	@rm -f Empty.* $(TRUSTED_DIR)/Enclave_t.*  $(Enclave_C_Objects)
