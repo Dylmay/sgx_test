@@ -25,9 +25,10 @@ if [ $# -gt 2 ]; then
   TEST_STR+=" data_len=$3 bytes"
 fi
 
-set_governor "performance"
+source /opt/intel/sgxsdk/environment
+#set_governor "performance"
 echo "$TEST_STR"
 taskset -c ${COREID} ./${PROGRAM} $2 $3 > "$1"
 echo "Test finished. Results saved to $1"
-set_governor "powersave"
+#set_governor "powersave"
 

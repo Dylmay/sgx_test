@@ -9,7 +9,7 @@
 #include "sgx_error.h"       /* sgx_status_t */
 #include "sgx_eid.h"     /* sgx_enclave_id_t */
 
-#define DATA_SIZE 750lu
+#define DATA_SIZE 262144000lu
 
 #ifndef TRUE
 # define TRUE 1
