@@ -1,4 +1,4 @@
-#!/usr/bin/bash
+#!/bin/bash
 COREID=0
 PROGRAM=sgx_perf
 
@@ -26,9 +26,9 @@ if [ $# -gt 2 ]; then
 fi
 
 source /opt/intel/sgxsdk/environment
-#set_governor "performance"
+set_governor "performance"
 echo "$TEST_STR"
 taskset -c ${COREID} ./${PROGRAM} $2 $3 > "$1"
 echo "Test finished. Results saved to $1"
-#set_governor "powersave"
+set_governor "powersave"
 
