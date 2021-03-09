@@ -15,7 +15,7 @@ update_enc_size() {
 }
 
 fix_size_filename() {
-  sed -i "s/| Data size:.*/| Data size:      ${i}\t|/" "${1}/size_var/sgx_test_${i}_bytes.txt"
+  sed -i "s/| Data size:.*/| Data size:      ${2}\t|/" "${1}/size_var/sgx_test_${2}_bytes.txt"
 }
 
 make
