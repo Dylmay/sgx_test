@@ -15,7 +15,7 @@ MAX_DATA = 12_288_000
 
 class Tag:
     NATIVE = "Native"
-    VIRT = "Virtualised"
+    VIRT = "Virtualized"
     DOCKER = "Docker"
 
 
@@ -134,20 +134,25 @@ class DataSet(dict):
 
 class Chart:
     data_sets: list
+    xlabel: list
+    XLABEL_FULL = ['', '', '1 kB', '10 kB', '100 kB', '0.95 MB', '9.5 MB', '95 MB']
 
     def __init__(self):
         super().__init__()
         self.data_sets = []
+        self.xlabel = Chart.XLABEL_FULL
 
     def add_data_set(self, tag: str, data: DataSet, color='b'):
         self.data_sets.append((tag, data, color))
 
     def draw_line_chart(self, test_type: str, draw_error: bool = True):
         title = test_type + " performance"
-        label = Chart.get_test_measurement(test_type)
+        y_label = Chart.get_test_measurement(test_type)
+        x_label = Chart.get_x_label(test_type)
 
         pyplot.title(title)
-        pyplot.ylabel(label)
+        pyplot.ylabel(y_label)
+        pyplot.xlabel(x_label)
 
         for tag, data, color in self.data_sets:
             x, y = zip(*data.get_test_stats(test_type, Stat.MEAN))
@@ -163,6 +168,8 @@ class Chart:
 
         pyplot.legend()
         pyplot.xscale("log")
+        axes = pyplot.axes()
+        axes.set_xticklabels(self.xlabel)
         pyplot.show()
 
     def draw_bar_chart(self):
@@ -201,6 +208,16 @@ class Chart:
             return "time taken (ns)"
         else:
             return "Unknown measurement"
+
+    @staticmethod
+    def get_x_label(test_type):
+        if test_type == Test.CONST or test_type == Test.DEC:
+            return "Static array size"
+        elif test_type == Test.ENC or test_type == Test.DEC or \
+                test_type == Test.IN or test_type == Test.OUT:
+            return "Packet size"
+        else:
+            return ""
 
     @staticmethod
     def format_data(test_type, data):
@@ -270,11 +287,11 @@ def parse_result_folder(folder_name: str, key_select) -> DataSet:
 
 if __name__ == '__main__':
     # native sgx data set
-    native_data_set = parse_result_folder('recordings/native2/data_var', get_data_len)
-    native_size_set = parse_result_folder('recordings/native2/size_var', get_data_size)
+    native_data_set = parse_result_folder('recordings/native/data_var', get_data_len)
+    native_size_set = parse_result_folder('recordings/native/size_var', get_data_size)
 
     # virtual sgx data set
-    virt_data_set = parse_result_folder('recordings/virt2/data_var', get_data_len)
+    virt_data_set = parse_result_folder('recordings/virt_data/data_var', get_data_len)
     virt_size_set = parse_result_folder('recordings/virt2/size_var', get_data_size)
 
     # docker sgx data set
@@ -287,6 +304,7 @@ if __name__ == '__main__':
     size_chart.add_data_set(Tag.DOCKER, docker_size_set, 'b')
 
     size_chart.draw_line_chart(Test.CONST)
+
     size_chart.draw_line_chart(Test.DEST)
     size_chart.draw_line_chart(Test.ECALL, False)
 
