@@ -2,7 +2,7 @@
 #  -*- coding: UTF-8 -*-
 import json
 
-from matplotlib import pyplot
+from matplotlib import pyplot, font_manager
 import numpy
 
 import os
@@ -10,6 +10,13 @@ import os
 HEADER_INDICATOR = "--"
 TRACE_INDICATOR = "#"
 SEPARATOR = "_"
+MAX_DATA = 12_288_000
+
+
+class Tag:
+    NATIVE = "Native"
+    VIRT = "Virtualised"
+    DOCKER = "Docker"
 
 
 class Setting:
@@ -125,74 +132,85 @@ class DataSet(dict):
         return stat_bundle
 
 
-def get_test_measurement(test_type):
-    label = "Unknown measurement"
+class Chart:
+    data_sets: list
 
-    if test_type == Test.READ:
-        label = "time taken (ns)"
+    def __init__(self):
+        super().__init__()
+        self.data_sets = []
 
-    elif test_type == Test.WRITE:
-        label = "time taken (ns)"
+    def add_data_set(self, tag: str, data: DataSet, color='b'):
+        self.data_sets.append((tag, data, color))
 
-    elif test_type == Test.CONST:
-        label = "time taken (ns)"
+    def draw_line_chart(self, test_type: str, draw_error: bool = True):
+        title = test_type + " performance"
+        label = Chart.get_test_measurement(test_type)
 
-    elif test_type == Test.DEST:
-        label = "time taken (ns)"
+        pyplot.title(title)
+        pyplot.ylabel(label)
 
-    elif test_type == Test.IN:
-        label = "time taken (ns)"
+        for tag, data, color in self.data_sets:
+            x, y = zip(*data.get_test_stats(test_type, Stat.MEAN))
+            _, err = zip(*data.get_test_stats(test_type, Stat.STD_DEV))
+            x = list(map(lambda val: int(val.split(' ')[0]), x))
+            y = Chart.format_data(test_type, y)
+            err = Chart.format_data(test_type, err)
 
-    elif test_type == Test.OUT:
-        label = "time taken (ns)"
+            if draw_error:
+                pyplot.errorbar(x, y, yerr=err, fmt='.', capsize=4)
 
-    elif test_type == Test.ENC:
-        label = "time taken (ns)"
+            pyplot.plot(x, y, color=color, label=tag)
 
-    elif test_type == Test.DEC:
-        label = "time taken (ns)"
+        pyplot.legend()
+        pyplot.xscale("log")
+        pyplot.show()
 
-    return label
+    def draw_bar_chart(self):
+        """ Creates a bar chart displaying a certain test measurement """
+        title = self.test_type + " performance"
+        label = Chart.get_test_measurement(self.test_type)
+        bar_width = 0.4
 
+        pyplot.title(title)
+        pyplot.ylabel(label)
 
-def draw_bar_chart(test_type, data: DataSet, colour='g', draw_error=True):
-    """ Creates a bar chart displaying a certain test measurement """
-    title = test_type + " performance"
-    label = get_test_measurement(test_type)
+        # Modifies the retrieved data into matplotlib-friendly formats
+        index = numpy.arange(len(self.data_sets))
 
-    pyplot.title(title)
-    pyplot.ylabel(label)
+        for data, color in self.data_sets:
+            x, y = zip(*data.get_test_stats(self.test_type, Stat.MEAN))
 
-    # Modifies the retrieved data into matplotlib-friendly formats
-    x, y = zip(*data.get_test_stats(test_type, Stat.MEAN))
-    _, err = zip(*data.get_test_stats(test_type, Stat.STD_DEV))
+        index = numpy.arange(len(x))
+        pyplot.bar(index, y, color=color, width=bar_width)
+        pyplot.xticks(index, x)
 
-    index = numpy.arange(len(x))
-    bar_width = 0.4
+        pyplot.show()
 
-    if draw_error:
-        pyplot.errorbar(index, y, yerr=err, fmt='.', capsize=4)
-    pyplot.bar(index, y, color=colour, width=bar_width)
-    pyplot.xticks(index, x)
-    pyplot.show()
+    @staticmethod
+    def get_test_measurement(test_type):
+        if test_type == Test.READ:
+            return "time taken (ns)"
+        elif test_type == Test.WRITE:
+            return "time taken (ns)"
+        elif test_type == Test.CONST or test_type == Test.DEST or \
+                test_type == Test.ENC or test_type == Test.DEC or \
+                test_type == Test.IN or test_type == Test.OUT:
 
+            return "time taken (ms)"
+        elif test_type == Test.ECALL:
+            return "time taken (ns)"
+        else:
+            return "Unknown measurement"
 
-def draw_line_chart(test_type, data: DataSet, colour='b', draw_error=True):
-    title = test_type + " performance"
-    label = get_test_measurement(test_type)
+    @staticmethod
+    def format_data(test_type, data):
+        if test_type == Test.CONST or test_type == Test.DEST or \
+                test_type == Test.ENC or test_type == Test.DEC or \
+                test_type == Test.IN or test_type == Test.OUT:
 
-    pyplot.title(title)
-    pyplot.ylabel(label)
-
-    x, y = zip(*data.get_test_stats(test_type, Stat.MEAN))
-    _, err = zip(*data.get_test_stats(test_type, Stat.STD_DEV))
-    x = list(map(lambda val: int(val.split(' ')[0]), x))
-
-    if draw_error:
-        pyplot.errorbar(x, y, yerr=err, fmt='.', capsize=4)
-
-    pyplot.plot(x, y, color=colour)
-    pyplot.show()
+            return tuple(map(lambda data_val: nsec_to_msec(data_val), data))
+        else:
+            return data
 
 
 def sec_to_nsec(sec):
@@ -218,7 +236,8 @@ def get_data_len(file: str):
     with open(file) as file:
         while line := file.readline():
             if Setting.INDICATOR and Setting.DATA_LEN in line:
-                return int(line.split()[3])
+                data_size = int(line.split()[3])
+                return data_size if data_size < MAX_DATA else None
 
     return None
 
@@ -227,18 +246,7 @@ def get_data_size(file: str):
     """ Gets the enclave data size used in testing"""
     with open(file) as file:
         while line := file.readline():
-            if Setting.INDICATOR and Setting.DATA_LEN in line:
-                return int(line.split()[3])
-
-    return None
-
-
-def get_data_count(file: str):
-    """ Gets the number of iterations/repeats per test """
-    with open(file) as file:
-        while line := file.readline():
             if Setting.INDICATOR and Setting.DATA_SIZE in line:
-                print(line.split())
                 return int(line.split()[3])
 
     return None
@@ -261,9 +269,33 @@ def parse_result_folder(folder_name: str, key_select) -> DataSet:
 
 
 if __name__ == '__main__':
-    native_len_set = parse_result_folder('recordings/native/data_var', get_data_size)
-    native_size_set = parse_result_folder('recordings/native/size_var', get_data_count)
+    # native sgx data set
+    native_data_set = parse_result_folder('recordings/native2/data_var', get_data_len)
+    native_size_set = parse_result_folder('recordings/native2/size_var', get_data_size)
 
-    print(json.dumps(native_size_set, indent=2))
+    # virtual sgx data set
+    virt_data_set = parse_result_folder('recordings/virt2/data_var', get_data_len)
+    virt_size_set = parse_result_folder('recordings/virt2/size_var', get_data_size)
 
-    draw_line_chart(Test.CONST, native_size_set, 'y')
+    # docker sgx data set
+    docker_data_set = parse_result_folder('recordings/docker/data_var', get_data_len)
+    docker_size_set = parse_result_folder('recordings/docker/size_var', get_data_size)
+
+    size_chart = Chart()
+    size_chart.add_data_set(Tag.NATIVE, native_size_set, 'r')
+    size_chart.add_data_set(Tag.VIRT, virt_size_set, 'y')
+    size_chart.add_data_set(Tag.DOCKER, docker_size_set, 'b')
+
+    size_chart.draw_line_chart(Test.CONST)
+    size_chart.draw_line_chart(Test.DEST)
+    size_chart.draw_line_chart(Test.ECALL, False)
+
+    data_chart = Chart()
+    data_chart.add_data_set(Tag.NATIVE, native_data_set, 'r')
+    data_chart.add_data_set(Tag.VIRT, virt_data_set, 'y')
+    data_chart.add_data_set(Tag.DOCKER, docker_data_set, 'b')
+
+    data_chart.draw_line_chart(Test.ENC)
+    data_chart.draw_line_chart(Test.DEC)
+    data_chart.draw_line_chart(Test.IN)
+    data_chart.draw_line_chart(Test.OUT)
