@@ -1,0 +1,8 @@
+| Count:      5000	|
+| Data len:   12288000	|
+| Enclave.so: Enclave.signed.so	|
+_______________________________________________________________
+#main: beginning io test
+#io: initialized enclave
+#io: initialized test data
+#io: iter 1; sending data
