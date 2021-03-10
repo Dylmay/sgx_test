@@ -12,6 +12,7 @@ TRACE_INDICATOR = "#"
 SEPARATOR = "_"
 MAX_DATA = 12_288_000
 
+CHART_DIR = "./graphs/"
 
 class Tag:
     NATIVE = "Native"
@@ -172,25 +173,28 @@ class Chart:
         axes.set_xticklabels(self.xlabel)
         pyplot.show()
 
-    def draw_bar_chart(self):
+    def draw_bar_chart(self, test_type: str):
         """ Creates a bar chart displaying a certain test measurement """
-        title = self.test_type + " performance"
-        label = Chart.get_test_measurement(self.test_type)
+        title = test_type + " performance"
+        label = Chart.get_test_measurement(test_type)
         bar_width = 0.4
 
         pyplot.title(title)
         pyplot.ylabel(label)
+        plot_data = []
+        systems = []
+        color_list = []
+
+        for tag, data, color in self.data_sets:
+            systems.append(tag)
+            color_list.append(color)
+            plot_data.append(data.get_test_stats(test_type, Stat.MEAN)[0][1])
 
         # Modifies the retrieved data into matplotlib-friendly formats
-        index = numpy.arange(len(self.data_sets))
+        index = numpy.arange(len(systems))
 
-        for data, color in self.data_sets:
-            x, y = zip(*data.get_test_stats(self.test_type, Stat.MEAN))
-
-        index = numpy.arange(len(x))
-        pyplot.bar(index, y, color=color, width=bar_width)
-        pyplot.xticks(index, x)
-
+        pyplot.bar(index, plot_data, color=color_list, width=bar_width)
+        pyplot.xticks(index, systems)
         pyplot.show()
 
     @staticmethod
@@ -287,16 +291,16 @@ def parse_result_folder(folder_name: str, key_select) -> DataSet:
 
 if __name__ == '__main__':
     # native sgx data set
-    native_data_set = parse_result_folder('recordings/native/data_var', get_data_len)
-    native_size_set = parse_result_folder('recordings/native/size_var', get_data_size)
+    native_data_set = parse_result_folder('recordings/native_new/data_var', get_data_len)
+    native_size_set = parse_result_folder('recordings/native_new/size_var', get_data_size)
 
     # virtual sgx data set
     virt_data_set = parse_result_folder('recordings/virt_data/data_var', get_data_len)
     virt_size_set = parse_result_folder('recordings/virt2/size_var', get_data_size)
 
     # docker sgx data set
-    docker_data_set = parse_result_folder('recordings/docker/data_var', get_data_len)
-    docker_size_set = parse_result_folder('recordings/docker/size_var', get_data_size)
+    docker_data_set = parse_result_folder('recordings/docker_new/data_var', get_data_len)
+    docker_size_set = parse_result_folder('recordings/docker_new/size_var', get_data_size)
 
     size_chart = Chart()
     size_chart.add_data_set(Tag.NATIVE, native_size_set, 'r')
@@ -304,9 +308,8 @@ if __name__ == '__main__':
     size_chart.add_data_set(Tag.DOCKER, docker_size_set, 'b')
 
     size_chart.draw_line_chart(Test.CONST)
-
     size_chart.draw_line_chart(Test.DEST)
-    size_chart.draw_line_chart(Test.ECALL, False)
+    size_chart.draw_bar_chart(Test.ECALL)
 
     data_chart = Chart()
     data_chart.add_data_set(Tag.NATIVE, native_data_set, 'r')
