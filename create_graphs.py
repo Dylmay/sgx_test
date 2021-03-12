@@ -18,6 +18,8 @@ class Tag:
     NATIVE = "Native"
     VIRT = "Virtualized"
     DOCKER = "Docker"
+    NATIVE_NEW = "Modified 5.6.0 kernel"
+    NATIVE_OLD = "Unmodified 5.6.0 kernel"
 
 
 class Setting:
@@ -302,6 +304,28 @@ if __name__ == '__main__':
     docker_data_set = parse_result_folder('recordings/docker_new/data_var', get_data_len)
     docker_size_set = parse_result_folder('recordings/docker_new/size_var', get_data_size)
 
+    native_old_data_set = parse_result_folder('recordings/native2/data_var', get_data_len)
+    native_old_size_set = parse_result_folder('recordings/native2/size_var', get_data_size)
+
+    # comparison between modified and unmodified kernels
+    size_chart = Chart()
+    size_chart.add_data_set(Tag.NATIVE_NEW, native_size_set, 'r')
+    size_chart.add_data_set(Tag.NATIVE_OLD, native_old_size_set, 'g')
+
+    size_chart.draw_bar_chart(Test.ECALL)
+    size_chart.draw_line_chart(Test.CONST)
+    size_chart.draw_line_chart(Test.DEST)
+
+    data_chart = Chart()
+    data_chart.add_data_set(Tag.NATIVE_NEW, native_data_set, 'r')
+    data_chart.add_data_set(Tag.NATIVE_OLD, native_old_data_set, 'g')
+
+    data_chart.draw_line_chart(Test.ENC)
+    data_chart.draw_line_chart(Test.DEC)
+    data_chart.draw_line_chart(Test.IN)
+    data_chart.draw_line_chart(Test.OUT)
+
+    # comparison between native, virtual and docker
     size_chart = Chart()
     size_chart.add_data_set(Tag.NATIVE, native_size_set, 'r')
     size_chart.add_data_set(Tag.VIRT, virt_size_set, 'y')
